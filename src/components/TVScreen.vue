@@ -187,6 +187,18 @@ export default {
         hls = null;
       }
 
+      // Check if the URL is a user stream
+      if (currentChannel.value?.type === 'user-stream') {
+        console.log('Loading user stream:', url);
+        if (videoPlayer.value) {
+          videoPlayer.value.src = url;
+          videoPlayer.value.play().catch(err => {
+            console.error('User stream playback error:', err);
+          });
+        }
+        return;
+      }
+
       if (Hls.isSupported()) {
         hls = new Hls({
           debug: false,
@@ -487,7 +499,7 @@ export default {
     };
 
     watch(currentChannel, async (newChannel) => {
-      if (newChannel?.stream_url) {
+      if (newChannel?.url || newChannel?.stream_url) {
         error.value = null;
         isLoading.value = true;
         errorCount.value = 0;
@@ -499,7 +511,9 @@ export default {
           
           setTimeout(() => {
             if (!isDestroyed.value) {
-              initializeHls(videoPlayer.value, newChannel.stream_url);
+              const streamUrl = newChannel.url || newChannel.stream_url;
+              console.log('Loading channel:', newChannel.name, 'URL:', streamUrl);
+              initializeHls(videoPlayer.value, streamUrl);
             }
           }, 1000);
         }

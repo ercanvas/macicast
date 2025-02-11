@@ -45,10 +45,18 @@ export const useChannelStore = defineStore('channel', {
 
     // Add user stream management actions
     addUserStream(stream) {
+      const streamData = {
+        ...stream,
+        stream_url: stream.url, // Add this for compatibility with TVScreen
+        type: 'user-stream',
+        category: 'User Streams',
+        channel_number: `U${this.userStreams.length + 1}`
+      };
+
       // Check if stream already exists
       const exists = this.userStreams.find(s => s.id === stream.id);
       if (!exists) {
-        this.userStreams.push(stream);
+        this.userStreams.push(streamData);
       }
     },
 

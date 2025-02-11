@@ -162,7 +162,7 @@ export default {
           videos: videoQueue.value
         };
 
-        console.log('Starting stream with data:', streamData); // Debug log
+        console.log('Starting stream with data:', streamData);
 
         const response = await fetch(endpoints.startStream, {
           method: 'POST',
@@ -185,8 +185,9 @@ export default {
         store.addUserStream({
           id: result.id,
           name: streamName.value,
+          url: result.playbackUrl, // Make sure this matches the server response
+          stream_url: result.playbackUrl, // Add both for compatibility
           type: 'user-stream',
-          url: result.playbackUrl,
           status: 'active'
         });
 
