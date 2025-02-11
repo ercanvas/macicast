@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import { API_BASE_URL } from '../config/api';
+
+const API_URL = 'https://macicast-backend.onrender.com/api';
 
 export const useChannelStore = defineStore('channel', {
   state: () => ({
@@ -11,8 +12,7 @@ export const useChannelStore = defineStore('channel', {
     volumeInfo: {
       level: 50,
       show: false
-    },
-    userStreams: [] // Initialize userStreams array
+    }
   }),
   
   actions: {
@@ -21,65 +21,46 @@ export const useChannelStore = defineStore('channel', {
       this.error = null;
       
       try {
-        const response = await axios.get(`${API_BASE_URL}/channels`);
-        this.channels = response.data;
+        console.log('API çağrısı yapılıyor:', `${API_URL}/channels`);
+        const response = await axios.get(`${API_URL}/channels`);
+        console.log('API yanıtı:', response.data);
         
-        if (this.channels.length > 0 && !this.currentChannel) {
-          this.currentChannel = this.channels[0];
+        if (Array.isArray(response.data)) {
+          this.channels = response.data;
+          // İlk kanalı varsayılan olarak seç
+          if (this.channels.length > 0 && !this.currentChannel) {
+            this.currentChannel = this.channels[0];
+          }
+        } else {
+          throw new Error('API geçersiz veri formatı döndürdü');
         }
       } catch (error) {
-        console.error('Error fetching channels:', error);
+        console.error('Kanal listesi alınırken hata:', error);
         this.error = 'Kanallar yüklenirken bir hata oluştu';
+        throw error;
       } finally {
         this.loading = false;
       }
     },
 
+    async searchChannels(query) {
+      try {
+        const response = await axios.get(`${API_URL}/channels/search`, {
+          params: { q: query }
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Kanal arama hatası:', error);
+        throw error;
+      }
+    },
+    
     setCurrentChannel(channel) {
       this.currentChannel = channel;
     },
 
     setVolumeInfo(info) {
       this.volumeInfo = info;
-    },
-
-    // Add user stream management actions
-    addUserStream(stream) {
-      const streamData = {
-        ...stream,
-        stream_url: stream.url || stream.playbackUrl, // Support both formats
-        url: stream.url || stream.playbackUrl, // Support both formats
-        type: 'user-stream',
-        category: 'User Streams',
-        channel_number: `U${this.userStreams.length + 1}`,
-        logo_url: '', // Add empty logo URL
-        is_active: true
-      };
-
-      // Check if stream already exists
-      const exists = this.userStreams.find(s => s.id === stream.id);
-      if (!exists) {
-        this.userStreams.push(streamData);
-      }
-    },
-
-    removeUserStream(streamId) {
-      this.userStreams = this.userStreams.filter(s => s.id !== streamId);
-    },
-
-    removeUserStreams() {
-      this.userStreams = [];
-    },
-
-    // Get all channels including user streams
-    getAllChannels() {
-      return [...this.channels, ...this.userStreams];
     }
-  },
-
-  getters: {
-    // Add getters for easier access
-    hasUserStreams: (state) => state.userStreams.length > 0,
-    activeUserStreams: (state) => state.userStreams.filter(s => s.status === 'active')
   }
 });

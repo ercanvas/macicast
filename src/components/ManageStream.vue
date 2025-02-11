@@ -100,6 +100,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Add processing indicator -->
+  <div v-if="isProcessing" class="fixed inset-0 bg-black/80 flex items-center justify-center">
+    <div class="text-center">
+      <div class="animate-spin text-primary text-4xl mb-4">
+        <i class="bi bi-arrow-repeat"></i>
+      </div>
+      <p>Stream hazırlanıyor...</p>
+    </div>
+  </div>
+
+  <!-- Processing Overlay -->
+  <div v-if="isProcessing" 
+       class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="text-center p-6 rounded-xl bg-black/50">
+      <div class="animate-spin text-primary text-4xl mb-4">
+        <i class="bi bi-arrow-repeat"></i>
+      </div>
+      <p class="text-xl font-medium mb-2">Stream Hazırlanıyor</p>
+      <p class="text-gray-400">Videolarınız işleniyor, lütfen bekleyin...</p>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -116,6 +138,7 @@ export default {
     const activeStreams = ref([])
     const uploadProgress = ref(0)
     const isStreaming = ref(false)
+    const isProcessing = ref(false)
 
     const handleFileUpload = async (event) => {
       const file = event.target.files[0]
@@ -157,48 +180,72 @@ export default {
 
     const startStream = async () => {
       try {
+        isProcessing.value = true;
         const streamData = {
           name: streamName.value,
           videos: videoQueue.value
         };
 
-        console.log('Starting stream with data:', streamData);
-
         const response = await fetch(endpoints.startStream, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
           },
           body: JSON.stringify(streamData)
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Stream start failed: ${response.statusText}`);
+          throw new Error('Failed to start stream');
         }
 
         const result = await response.json();
-        activeStreams.value.push(result);
-        isStreaming.value = true;
         
-        store.addUserStream({
-          id: result.id,
-          name: streamName.value,
-          url: result.playbackUrl, // Make sure this matches the server response
-          stream_url: result.playbackUrl, // Add both for compatibility
-          type: 'user-stream',
-          status: 'active'
-        });
+        // Start polling for stream status
+        const pollStatus = async () => {
+          const statusRes = await fetch(endpoints.getStreamStatus(result.id));
+          const statusData = await statusRes.json();
 
-        // Clear form after successful stream start
-        streamName.value = '';
-        videoQueue.value = [];
+          console.log('Stream status:', statusData.status);
+
+          if (statusData.status === 'active') {
+            // Stream is ready
+            activeStreams.value.push({
+              id: result.id,
+              name: result.name,
+              playbackUrl: statusData.playbackUrl
+            });
+            isStreaming.value = true;
+            isProcessing.value = false;
+
+            // Add to channel list
+            store.addUserStream({
+              id: result.id,
+              name: result.name,
+              url: statusData.playbackUrl,
+              type: 'user-stream',
+              status: 'active'
+            });
+
+            // Clear form
+            streamName.value = '';
+            videoQueue.value = [];
+            
+          } else if (statusData.status === 'error') {
+            throw new Error(statusData.error || 'Stream processing failed');
+          } else {
+            // Keep polling
+            setTimeout(pollStatus, 3000);
+          }
+        };
+
+        pollStatus();
+
       } catch (error) {
         console.error('Stream start error:', error);
-        alert(`Yayın başlatılamadı: ${error.message}`);
+        alert(error.message || 'Failed to start stream');
+        isProcessing.value = false;
       }
-    }
+    };
 
     const stopStream = async () => {
       try {
@@ -243,6 +290,7 @@ export default {
       activeStreams,
       uploadProgress,
       isStreaming,
+      isProcessing,
       handleFileUpload,
       startStream,
       stopStream,
