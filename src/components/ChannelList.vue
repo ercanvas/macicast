@@ -82,6 +82,23 @@
             </div>
           </div>
         </div>
+
+        <!-- User Streams Section -->
+        <div v-if="store.userStreams.length > 0" class="mt-4">
+          <h3 class="text-lg font-bold mb-2">Kullanıcı Yayınları</h3>
+          <div class="space-y-2">
+            <div v-for="stream in store.userStreams" 
+                 :key="stream.id"
+                 @click="selectChannel(stream)"
+                 class="flex items-center gap-3 p-2 rounded hover:bg-gray-800/50 cursor-pointer">
+              <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <i class="bi bi-broadcast"></i>
+              </div>
+              <span>{{ stream.name }}</span>
+              <span class="ml-auto text-primary">Canlı</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -7,6 +7,11 @@ const routes = [
     name: 'Home',
     component: Home
   },
+  {
+    path: '/stream-management',
+    name: 'StreamManagement',
+    component: () => import('../views/StreamManagement.vue')
+  },
   // ...other routes...
 ];
 

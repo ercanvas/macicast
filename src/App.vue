@@ -106,7 +106,26 @@
                 class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
           <i class="bi bi-controller text-2xl"></i>
         </button>
+        <button @click="toggleStreamManager" 
+                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
+          <i class="bi bi-broadcast text-2xl"></i>
+        </button>
       </div>
+
+      <!-- Stream Manager -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="transform translate-x-full"
+        enter-to-class="transform translate-x-0"
+        leave-active-class="transition-all duration-300 ease-in"
+        leave-from-class="transform translate-x-0"
+        leave-to-class="transform translate-x-full"
+      >
+        <div v-if="showStreamManager" 
+             class="fixed top-4 right-4 z-50">
+          <ManageStream @close="showStreamManager = false" />
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
@@ -117,13 +136,15 @@ import { useChannelStore } from './stores/channelStore'
 import TVScreen from './components/TVScreen.vue'
 import ChannelList from './components/ChannelList.vue'
 import RemoteControl from './components/RemoteControl.vue'
+import ManageStream from './components/ManageStream.vue'
 
 export default {
   name: 'App',
   components: {
     TVScreen,
     ChannelList,
-    RemoteControl
+    RemoteControl,
+    ManageStream
   },
   setup() {
     const store = useChannelStore()
@@ -132,6 +153,7 @@ export default {
     const showChannelInfo = ref(false)
     const isMobilePortrait = ref(false)
     const isMobile = ref(false)
+    const showStreamManager = ref(false)
     let channelInfoTimeout = null
 
     const volumeIcon = computed(() => {
@@ -221,6 +243,8 @@ export default {
       } else if (e.key.toLowerCase() === 'r') {
         showRemote.value = !showRemote.value;
         showChannelList.value = false;
+      } else if (e.key.toLowerCase() === 's') {
+        toggleStreamManager()
       }
     };
 
@@ -255,6 +279,12 @@ export default {
       showRemote.value = false
     }
 
+    const toggleStreamManager = () => {
+      showStreamManager.value = !showStreamManager.value
+      showChannelList.value = false
+      showRemote.value = false
+    }
+
     return {
       showChannelList,
       showRemote,
@@ -266,7 +296,9 @@ export default {
       toggleChannels,
       volumeIcon,
       volumeInfo: computed(() => store.volumeInfo),
-      isMobile
+      isMobile,
+      showStreamManager,
+      toggleStreamManager
     }
   }
 }

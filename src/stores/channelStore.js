@@ -12,7 +12,8 @@ export const useChannelStore = defineStore('channel', {
     volumeInfo: {
       level: 50,
       show: false
-    }
+    },
+    userStreams: []
   }),
   
   actions: {
@@ -61,6 +62,18 @@ export const useChannelStore = defineStore('channel', {
 
     setVolumeInfo(info) {
       this.volumeInfo = info;
+    },
+
+    addUserStream(stream) {
+      this.userStreams.push(stream);
+    },
+
+    removeUserStreams() {
+      this.userStreams = [];
+    },
+
+    getAllChannels() {
+      return [...this.channels, ...this.userStreams];
     }
   }
 });
