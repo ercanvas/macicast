@@ -84,19 +84,29 @@
         </div>
 
         <!-- User Streams Section -->
-        <div v-if="store.userStreams.length > 0" class="mt-4">
+        <div v-if="store.hasUserStreams" class="mt-4">
           <h3 class="text-lg font-bold mb-2">Kullanıcı Yayınları</h3>
           <div class="space-y-2">
-            <div v-for="stream in store.userStreams" 
-                 :key="stream.id"
-                 @click="selectChannel(stream)"
-                 class="flex items-center gap-3 p-2 rounded hover:bg-gray-800/50 cursor-pointer">
-              <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <i class="bi bi-broadcast"></i>
+            <button
+              v-for="stream in store.userStreams" 
+              :key="stream.id"
+              @click="selectChannel(stream)"
+              class="w-full text-left p-3 rounded-xl bg-gray-800/50 hover:bg-primary/10 flex items-center gap-3 group transition-all"
+              :class="{'bg-primary/20': currentChannel?.id === stream.id}"
+            >
+              <div class="w-10 h-10 rounded-lg overflow-hidden bg-black/30 flex-shrink-0 flex items-center justify-center">
+                <i class="bi bi-broadcast text-2xl"></i>
               </div>
-              <span>{{ stream.name }}</span>
-              <span class="ml-auto text-primary">Canlı</span>
-            </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="font-medium truncate">{{ stream.name }}</div>
+                <div class="text-xs text-primary">Canlı Yayın</div>
+              </div>
+
+              <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                <i class="bi bi-play-fill text-primary"></i>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -208,7 +218,8 @@ export default {
       handleChannelAdded,
       channels,
       loading,
-      error
+      error,
+      store // Make sure store is returned
     };
   }
 };
