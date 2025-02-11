@@ -95,6 +95,18 @@
           <RemoteControl @close="showRemote = false" />
         </div>
       </Transition>
+
+      <!-- Mobile Controls - Only visible on mobile -->
+      <div v-if="isMobile" class="fixed bottom-8 left-0 right-0 flex justify-center gap-4 z-50">
+        <button @click="toggleChannelList" 
+                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
+          <i class="bi bi-tv text-2xl"></i>
+        </button>
+        <button @click="toggleRemote" 
+                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
+          <i class="bi bi-controller text-2xl"></i>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -119,6 +131,7 @@ export default {
     const showRemote = ref(false)
     const showChannelInfo = ref(false)
     const isMobilePortrait = ref(false)
+    const isMobile = ref(false)
     let channelInfoTimeout = null
 
     const volumeIcon = computed(() => {
@@ -135,6 +148,11 @@ export default {
       } else {
         isMobilePortrait.value = false
       }
+    }
+
+    // Check if device is mobile
+    const checkDevice = () => {
+      isMobile.value = window.innerWidth < 768 // or any breakpoint you prefer
     }
 
     // Kanal değiştirme fonksiyonu
@@ -183,6 +201,8 @@ export default {
 
     // Klavye kontrollerini dinle
     const handleKeyPress = (e) => {
+      if (isMobile.value) return // Disable keyboard shortcuts on mobile
+
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         changeChannel('up');
@@ -209,11 +229,14 @@ export default {
       window.addEventListener('keydown', handleKeyPress)
       window.addEventListener('resize', checkOrientation)
       checkOrientation()
+      checkDevice()
+      window.addEventListener('resize', checkDevice)
     })
 
     onUnmounted(() => {
       window.removeEventListener('keydown', handleKeyPress)
       window.removeEventListener('resize', checkOrientation)
+      window.removeEventListener('resize', checkDevice)
       clearTimeout(channelInfoTimeout)
     })
 
@@ -242,7 +265,8 @@ export default {
       toggleRemote,
       toggleChannels,
       volumeIcon,
-      volumeInfo: computed(() => store.volumeInfo)
+      volumeInfo: computed(() => store.volumeInfo),
+      isMobile
     }
   }
 }
