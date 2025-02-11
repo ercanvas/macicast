@@ -197,7 +197,10 @@ export default {
           maxBufferSize: 30 * 1000 * 1000,
           maxBufferLength: 30,
           enableWorker: true,
-          lowLatencyMode: true
+          lowLatencyMode: true,
+          manifestLoadingTimeOut: 30000, // Increase timeout
+          manifestLoadingMaxRetry: 3,
+          manifestLoadingRetryDelay: 1000
         });
 
         userHls.attachMedia(videoElement);
@@ -209,7 +212,17 @@ export default {
         userHls.on(Hls.Events.ERROR, (event, data) => {
           console.error('User stream HLS error:', data);
           if (data.fatal) {
-            error.value = 'Yayın yüklenemedi. Lütfen tekrar deneyin.';
+            if (data.details === 'manifestLoadError') {
+              error.value = 'Yayın hazırlanıyor, lütfen bekleyin...';
+              // Retry loading after delay
+              setTimeout(() => {
+                if (!isDestroyed.value) {
+                  userHls.loadSource(url);
+                }
+              }, 5000);
+            } else {
+              error.value = 'Yayın yüklenemedi. Lütfen tekrar deneyin.';
+            }
           }
         });
 
