@@ -158,6 +158,29 @@ export default {
       return 'bi-volume-up';
     });
 
+    const getStreamUrls = (channelName) => {
+      const streamUrls = {
+        'TRT 1': [
+          'https://tv-trt1.medya.trt.com.tr/master.m3u8',
+          'http://stream.tvcdn.net/ulusal/trt-1.m3u8',
+          'https://trt1.blutv.com/blutv_trt1_live/live.m3u8',
+          'https://d1u68oyra9spme.cloudfront.net/master.m3u8'
+        ],
+        'ATV': [
+          'https://stream.atv.com.tr/atv/smil:atv.smil/playlist.m3u8',
+          'http://hw1.jemtv.com/app/ATVHD/playlist.m3u8',
+          'https://atv.blutv.com/blutv_atv_live/live.m3u8'
+        ],
+        // Add more channels with all available streams
+      };
+      
+      return streamUrls[channelName] || [];
+    };
+
+    const tryUpgradeToHttps = (url) => {
+      return url.replace(/^http:/, 'https:');
+    };
+
     const initializeHls = (videoElement, url) => {
       if (hls) {
         hls.destroy();
@@ -202,7 +225,25 @@ export default {
           
           // Hata kurtarma
           maxStarvationDelay: 4,
-          maxLoadingDelay: 4
+          maxLoadingDelay: 4,
+          xhrSetup: function(xhr, url) {
+            // Try both HTTP and HTTPS
+            xhr.addEventListener('error', function() {
+              if (url.startsWith('https:')) {
+                // If HTTPS fails, try HTTP
+                const httpUrl = url.replace('https:', 'http:');
+                xhr.open('GET', httpUrl, true);
+              } else if (url.startsWith('http:')) {
+                // If HTTP fails, try HTTPS
+                const httpsUrl = url.replace('http:', 'https:');
+                xhr.open('GET', httpsUrl, true);
+              }
+            });
+          },
+          enableWorker: true,
+          maxLoadingRetry: 10, // Increase retry attempts
+          manifestLoadingMaxRetry: 10,
+          manifestLoadingRetryDelay: 500 // Retry every 500ms
         });
 
         hls.attachMedia(videoElement);
@@ -214,7 +255,17 @@ export default {
 
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            handleFatalError(data);
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                handleNetworkError(data);
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                handleMediaError(data);
+                break;
+              default:
+                handleFatalError(data);
+                break;
+            }
           } else if (data.details === 'manifestLoadError') {
             handleManifestLoadError(url);
           }
@@ -300,15 +351,35 @@ export default {
       }
     };
 
-    const handleNetworkError = (data) => {
-      console.log('Ağ hatası yönetiliyor:', data);
-      error.value = 'Ağ bağlantısı hatası. Yeniden bağlanılıyor...';
+    const handleNetworkError = async (data) => {
+      console.log('Network error:', data);
       
-      setTimeout(() => {
-        if (currentChannel.value?.stream_url && videoPlayer.value) {
-          retryLoading();
+      const streams = getStreamUrls(currentChannel.value?.name);
+      const currentUrl = currentChannel.value?.stream_url;
+      
+      // Try HTTPS version first
+      if (currentUrl.startsWith('http:')) {
+        const httpsUrl = tryUpgradeToHttps(currentUrl);
+        try {
+          await fetch(httpsUrl, { method: 'HEAD' });
+          initializeHls(videoPlayer.value, httpsUrl);
+          return;
+        } catch (e) {
+          console.log('HTTPS upgrade failed, trying alternative streams');
         }
-      }, 2000);
+      }
+      
+      // Try alternative streams
+      if (currentStreamIndex.value < streams.length - 1) {
+        currentStreamIndex.value++;
+        const nextStream = streams[currentStreamIndex.value];
+        console.log(`Trying alternative stream ${currentStreamIndex.value + 1}/${streams.length}`);
+        error.value = 'Alternatif yayın kaynağına bağlanılıyor...';
+        initializeHls(videoPlayer.value, nextStream);
+      } else {
+        error.value = 'Yayın bağlantısı kurulamadı. Lütfen daha sonra tekrar deneyin.';
+        showRetryButton.value = true;
+      }
     };
 
     const handleFatalError = (data) => {
@@ -324,53 +395,33 @@ export default {
       retryCount.value = 0;
     };
 
-    const getStreamUrls = (channelName) => {
-      const streamUrls = {
-        'TRT 1': [
-          'https://tv-trt1.medya.trt.com.tr/master.m3u8',
-          'https://d1u68oyra9spme.cloudfront.net/master.m3u8',
-          'https://trt1.blutv.com/blutv_trt1_live/live.m3u8'
-        ],
-        'ATV': [
-          'https://stream.atv.com.tr/atv/smil:atv.smil/playlist.m3u8',
-          'https://hw1.jemtv.com/app/ATVHD/playlist.m3u8'
-        ],
-        // ... diğer kanallar için alternatif stream'ler
-      };
-      
-      return streamUrls[channelName] || [];
-    };
-
     const handleVideoError = async (e) => {
-      console.error('Video yükleme hatası:', e);
-      errorCount.value++;
-
-      if (errorCount.value >= MAX_ERROR_COUNT) {
-        // Alternatif stream'i dene
-        const streams = getStreamUrls(currentChannel.value?.name);
-        currentStreamIndex.value++;
-        
-        if (currentStreamIndex.value < streams.length) {
-          console.log('Alternatif yayın deneniyor:', currentStreamIndex.value);
-          error.value = 'Alternatif yayın kaynağına bağlanılıyor...';
+      console.error('Video loading error:', e);
+      
+      const streams = getStreamUrls(currentChannel.value?.name);
+      if (streams.length > 0) {
+        if (currentStreamIndex.value < streams.length - 1) {
+          currentStreamIndex.value++;
+          const nextStream = streams[currentStreamIndex.value];
+          error.value = `Alternatif kaynak deneniyor (${currentStreamIndex.value + 1}/${streams.length})`;
           isLoading.value = true;
           
           if (videoPlayer.value) {
             await cleanupVideo();
             setTimeout(() => {
-              initializeHls(videoPlayer.value, streams[currentStreamIndex.value]);
+              initializeHls(videoPlayer.value, nextStream);
             }, 1000);
           }
         } else {
-          error.value = 'Yayın şu anda erişilebilir değil. Lütfen daha sonra tekrar deneyin.';
+          error.value = 'Tüm yayın kaynakları denendi. Erişilebilir kaynak bulunamadı.';
           isLoading.value = false;
           showRetryButton.value = true;
         }
-        
-        errorCount.value = 0; // Hata sayacını sıfırla
       } else {
-        error.value = 'Yayın yükleniyor... Deneme ' + errorCount.value;
-        retryLoading();
+        // Fallback to original error handling
+        error.value = 'Yayın kaynağı bulunamadı.';
+        isLoading.value = false;
+        showRetryButton.value = true;
       }
     };
 
@@ -536,4 +587,4 @@ button:active {
     display: none; /* 1024 pikselden daha büyük ekranlarda gizle */
   }
 }
-</style> 
+</style>
