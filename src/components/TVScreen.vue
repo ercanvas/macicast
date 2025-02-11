@@ -190,15 +190,34 @@ export default {
       // Check if the URL is a user stream
       if (currentChannel.value?.type === 'user-stream') {
         console.log('Loading user stream:', url);
-        if (videoPlayer.value) {
-          videoPlayer.value.src = url;
-          videoPlayer.value.play().catch(err => {
-            console.error('User stream playback error:', err);
-          });
-        }
+        
+        // Create new HLS instance for user streams
+        const userHls = new Hls({
+          debug: true,
+          maxBufferSize: 30 * 1000 * 1000,
+          maxBufferLength: 30,
+          enableWorker: true,
+          lowLatencyMode: true
+        });
+
+        userHls.attachMedia(videoElement);
+        userHls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          console.log('HLS attached to video element');
+          userHls.loadSource(url);
+        });
+
+        userHls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('User stream HLS error:', data);
+          if (data.fatal) {
+            error.value = 'Yayın yüklenemedi. Lütfen tekrar deneyin.';
+          }
+        });
+
+        hls = userHls; // Store reference to cleanup later
         return;
       }
 
+      // Regular channel handling
       if (Hls.isSupported()) {
         hls = new Hls({
           debug: false,
@@ -512,7 +531,7 @@ export default {
           setTimeout(() => {
             if (!isDestroyed.value) {
               const streamUrl = newChannel.url || newChannel.stream_url;
-              console.log('Loading channel:', newChannel.name, 'URL:', streamUrl);
+              console.log('Loading channel:', newChannel.name, 'Type:', newChannel.type, 'URL:', streamUrl);
               initializeHls(videoPlayer.value, streamUrl);
             }
           }, 1000);

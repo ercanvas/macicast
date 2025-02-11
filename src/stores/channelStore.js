@@ -47,10 +47,13 @@ export const useChannelStore = defineStore('channel', {
     addUserStream(stream) {
       const streamData = {
         ...stream,
-        stream_url: stream.url, // Add this for compatibility with TVScreen
+        stream_url: stream.url || stream.playbackUrl, // Support both formats
+        url: stream.url || stream.playbackUrl, // Support both formats
         type: 'user-stream',
         category: 'User Streams',
-        channel_number: `U${this.userStreams.length + 1}`
+        channel_number: `U${this.userStreams.length + 1}`,
+        logo_url: '', // Add empty logo URL
+        is_active: true
       };
 
       // Check if stream already exists
