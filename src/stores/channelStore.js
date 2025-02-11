@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = 'https://macicast-backend.onrender.com/api';
 
 export const useChannelStore = defineStore('channel', {
   state: () => ({
@@ -63,4 +63,4 @@ export const useChannelStore = defineStore('channel', {
       this.volumeInfo = info;
     }
   }
-}); 
+});

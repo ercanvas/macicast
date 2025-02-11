@@ -126,7 +126,7 @@ export default {
       error.value = null;
 
       try {
-        const response = await axios.post('http://localhost:3000/api/channels', form);
+        const response = await axios.post('https://macicast-backend.onrender.com/api/channels', form);
         await store.fetchChannels(); // Refresh channel list
         emit('channel-added', response.data.channel);
         emit('close');

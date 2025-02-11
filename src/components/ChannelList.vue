@@ -93,10 +93,11 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useChannelStore } from '../stores/channelStore';
 import { storeToRefs } from 'pinia';
 import AddChannel from './AddChannel.vue';
+import axios from 'axios';
 
 export default {
   components: {
@@ -107,10 +108,27 @@ export default {
   
   setup() {
     const store = useChannelStore();
-    const { channels, currentChannel } = storeToRefs(store);
+    const { currentChannel } = storeToRefs(store);
     const searchQuery = ref('');
     const selectedCategory = ref('');
     const showAddChannel = ref(false);
+    const channels = ref([]);
+    const loading = ref(true);
+    const error = ref(null);
+
+    const fetchChannels = async () => {
+      try {
+        const response = await axios.get('https://macicast-backend.onrender.com/api/channels');
+        channels.value = response.data;
+      } catch (err) {
+        console.error('Error fetching channels:', err);
+        error.value = 'Kanal listesi yüklenirken bir hata oluştu.';
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    onMounted(fetchChannels);
 
     const categories = computed(() => 
       [...new Set(channels.value.map(channel => channel.category))].sort()
@@ -170,7 +188,10 @@ export default {
       currentChannel,
       selectChannel,
       showAddChannel,
-      handleChannelAdded
+      handleChannelAdded,
+      channels,
+      loading,
+      error
     };
   }
 };
