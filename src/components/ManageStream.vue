@@ -157,35 +157,45 @@ export default {
 
     const startStream = async () => {
       try {
+        const streamData = {
+          name: streamName.value,
+          videos: videoQueue.value
+        };
+
+        console.log('Starting stream with data:', streamData); // Debug log
+
         const response = await fetch(endpoints.startStream, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          body: JSON.stringify({
-            name: streamName.value,
-            videos: videoQueue.value
-          })
-        })
+          body: JSON.stringify(streamData)
+        });
 
         if (!response.ok) {
-          throw new Error(`Stream start failed: ${response.statusText}`)
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Stream start failed: ${response.statusText}`);
         }
 
-        const result = await response.json()
-        activeStreams.value.push(result)
-        isStreaming.value = true
+        const result = await response.json();
+        activeStreams.value.push(result);
+        isStreaming.value = true;
         
         store.addUserStream({
           id: result.id,
           name: streamName.value,
           type: 'user-stream',
-          url: result.playbackUrl
-        })
+          url: result.playbackUrl,
+          status: 'active'
+        });
+
+        // Clear form after successful stream start
+        streamName.value = '';
+        videoQueue.value = [];
       } catch (error) {
-        console.error('Stream start error:', error)
-        alert('Yayın başlatılamadı. Lütfen tekrar deneyin.')
+        console.error('Stream start error:', error);
+        alert(`Yayın başlatılamadı: ${error.message}`);
       }
     }
 
