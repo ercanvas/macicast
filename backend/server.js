@@ -259,14 +259,31 @@ app.delete('/api/favorites/:channelId', async (req, res) => {
 });
 
 // Video upload endpoint
-app.post('/api/upload', upload.single('video'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  res.json({
-    path: req.file.path,
-    name: req.file.originalname
-  });
+app.post('/api/upload', upload.single('video'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    try {
+        // Get the absolute path of the uploaded file
+        const filePath = path.resolve(req.file.path);
+        console.log('File uploaded to:', filePath);
+
+        // Verify file exists and is readable
+        await fsPromises.access(filePath, fs.constants.R_OK);
+
+        res.json({
+            path: filePath,
+            name: req.file.originalname,
+            size: req.file.size
+        });
+    } catch (error) {
+        console.error('Upload error:', error);
+        res.status(500).json({ 
+            error: 'Failed to process upload',
+            details: error.message
+        });
+    }
 });
 
 // Start stream endpoint
@@ -320,35 +337,46 @@ async function processNextVideo(streamId) {
             }
             
             console.log('Processing video with Mux...');
-            // Read the video file
-            const inputFile = await fsPromises.readFile(currentVideo.path);
+            const videoPath = currentVideo.path;
+            console.log('Video path:', videoPath);
 
-            // Create Mux Asset with error handling
-            let asset;
             try {
-                asset = await Video.Assets.create({
-                    input: inputFile,
-                    playback_policy: 'public',
-                    test: false
+                // Read file data
+                const fileData = await fsPromises.readFile(videoPath);
+                const base64Data = fileData.toString('base64');
+
+                // Create Mux Asset with direct file data
+                const asset = await Video.Assets.create({
+                    input: [{
+                        type: 'direct_upload',
+                        data: base64Data
+                    }],
+                    playback_policy: ['public']
                 });
+
+                console.log('Mux Asset created:', asset);
+
+                if (!asset || !asset.playback_ids || asset.playback_ids.length === 0) {
+                    throw new Error('Invalid asset response from Mux');
+                }
+
+                // Get playback ID
+                const playbackId = asset.playback_ids[0].id;
+
+                // Update video with Mux IDs
+                currentVideo.muxAssetId = asset.id;
+                currentVideo.muxPlaybackId = playbackId;
+
+                // Update stream with HLS URL
+                stream.playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+                stream.status = 'active';
+                await stream.save();
+
             } catch (muxError) {
                 console.error('Mux Asset creation error:', muxError);
-                throw new Error(`Failed to create Mux asset: ${muxError.message}`);
+                const errorMessage = typeof muxError === 'object' ? JSON.stringify(muxError) : muxError.message;
+                throw new Error(`Failed to create Mux asset: ${errorMessage}`);
             }
-
-            if (!asset || !asset.playback_ids || !asset.playback_ids[0]) {
-                throw new Error('Invalid asset response from Mux');
-            }
-
-            // Get playback ID
-            const playbackId = asset.playback_ids[0].id;
-
-            // Update video with Mux IDs
-            currentVideo.muxAssetId = asset.id;
-            currentVideo.muxPlaybackId = playbackId;
-
-            // Update stream
-            stream.playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
         } else {
             // Default test provider
             console.log('Processing video with default provider...');
@@ -358,13 +386,19 @@ async function processNextVideo(streamId) {
 
         await stream.save();
 
-        // Clean up local file
-        await fsPromises.unlink(currentVideo.path);
+        // Clean up local file only after successful processing
+        try {
+            await fsPromises.unlink(currentVideo.path);
+            console.log('Cleaned up local file:', currentVideo.path);
+        } catch (unlinkError) {
+            console.error('Error cleaning up file:', unlinkError);
+            // Don't throw here, as the stream is already processed
+        }
 
     } catch (error) {
         console.error('Video processing error:', error);
         stream.status = 'error';
-        stream.error = error.message;
+        stream.error = error.message || 'Unknown error occurred';
         await stream.save();
     }
 }
