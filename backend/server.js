@@ -1,3 +1,6 @@
+// Load environment variables first, before any other imports
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -15,17 +18,35 @@ const fs = require('fs');          // Regular fs for sync operations
 const fsPromises = require('fs').promises;  // Promise-based fs operations
 const os = require('os');
 
-// Import Mux configuration if STREAM_PROVIDER is 'mux'
+// Load environment variables first
+dotenv.config();
+
+// Initialize Mux with proper error handling
 let Video;
-if (process.env.STREAM_PROVIDER === 'mux') {
-    const muxConfig = require('./config/mux');
-    Video = muxConfig.Video;
+try {
+    if (process.env.STREAM_PROVIDER === 'mux') {
+        console.log('Initializing Mux provider...');
+        if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
+            console.error('❌ Missing Mux configuration. Please check MUX_TOKEN_ID and MUX_TOKEN_SECRET in .env');
+            process.exit(1);
+        }
+        const muxConfig = require('./config/mux');
+        Video = muxConfig.Video;
+        console.log('✅ Mux initialized successfully');
+    } else {
+        console.log('Using default stream provider');
+    }
+} catch (error) {
+    console.error('❌ Failed to initialize Mux:', error);
+    if (process.env.STREAM_PROVIDER === 'mux') {
+        process.exit(1);
+    } else {
+        console.log('Continuing without Mux integration...');
+    }
 }
 
 // Set FFmpeg path
 ffmpeg.setFfmpegPath(ffmpegPath);
-
-dotenv.config();
 
 // Use public MongoDB URL for Render deployment
 const mongoUrl = process.env.MONGO_PUBLIC_URL || process.env.MONGO_URL;
@@ -283,70 +304,69 @@ app.post('/api/stream/start', async (req, res) => {
 
 // Helper function to process videos
 async function processNextVideo(streamId) {
-  const stream = await Stream.findById(streamId);
-  if (!stream || stream.status === 'stopped') return;
+    const stream = await Stream.findById(streamId);
+    if (!stream || stream.status === 'stopped') return;
 
-  const currentVideo = stream.videos[stream.currentVideoIndex];
-  if (!currentVideo) return;
+    const currentVideo = stream.videos[stream.currentVideoIndex];
+    if (!currentVideo) return;
 
-  try {
-    // Update status to processing
-    stream.status = 'processing';
-    await stream.save();
+    try {
+        stream.status = 'processing';
+        await stream.save();
 
-    if (process.env.STREAM_PROVIDER === 'mux') {
-        // Mux processing logic
-        // Read the video file using promise-based fs
-        const inputFile = await fsPromises.readFile(currentVideo.path);
+        if (process.env.STREAM_PROVIDER === 'mux') {
+            if (!Video || !Video.Assets) {
+                throw new Error('Mux Video client not available. Please check your configuration.');
+            }
+            
+            console.log('Processing video with Mux...');
+            // Read the video file
+            const inputFile = await fsPromises.readFile(currentVideo.path);
 
-        // Create Mux Asset
-        const asset = await Video.Assets.create({
-            input: inputFile,
-            playback_policy: 'public',
-            test: false
-        });
+            // Create Mux Asset with error handling
+            let asset;
+            try {
+                asset = await Video.Assets.create({
+                    input: inputFile,
+                    playback_policy: 'public',
+                    test: false
+                });
+            } catch (muxError) {
+                console.error('Mux Asset creation error:', muxError);
+                throw new Error(`Failed to create Mux asset: ${muxError.message}`);
+            }
 
-        // Wait for asset to be ready
-        await new Promise(resolve => {
-            const checkAsset = async () => {
-                const assetStatus = await Video.Assets.get(asset.id);
-                if (assetStatus.status === 'ready') {
-                    resolve();
-                } else if (assetStatus.status === 'errored') {
-                    throw new Error('Asset processing failed');
-                } else {
-                    setTimeout(checkAsset, 5000);
-                }
-            };
-            checkAsset();
-        });
+            if (!asset || !asset.playback_ids || !asset.playback_ids[0]) {
+                throw new Error('Invalid asset response from Mux');
+            }
 
-        // Get playback ID
-        const playbackId = asset.playback_ids[0].id;
+            // Get playback ID
+            const playbackId = asset.playback_ids[0].id;
 
-        // Update video with Mux IDs
-        currentVideo.muxAssetId = asset.id;
-        currentVideo.muxPlaybackId = playbackId;
+            // Update video with Mux IDs
+            currentVideo.muxAssetId = asset.id;
+            currentVideo.muxPlaybackId = playbackId;
 
-        // Update stream
-        stream.playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
-    } else {
-        // Default test provider
-        stream.playbackUrl = `${process.env.BACKEND_URL}/streams/${stream._id}/playlist.m3u8`;
+            // Update stream
+            stream.playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+        } else {
+            // Default test provider
+            console.log('Processing video with default provider...');
+            stream.playbackUrl = `${process.env.BACKEND_URL}/streams/${stream._id}/playlist.m3u8`;
+            stream.status = 'active';
+        }
+
+        await stream.save();
+
+        // Clean up local file
+        await fsPromises.unlink(currentVideo.path);
+
+    } catch (error) {
+        console.error('Video processing error:', error);
+        stream.status = 'error';
+        stream.error = error.message;
+        await stream.save();
     }
-
-    stream.status = 'active';
-    await stream.save();
-
-    // Clean up local file using promise-based fs
-    await fsPromises.unlink(currentVideo.path);
-
-  } catch (error) {
-    console.error('Video processing error:', error);
-    stream.status = 'error';
-    stream.error = error.message;
-    await stream.save();
-  }
 }
 
 // Add status check endpoint
@@ -417,6 +437,29 @@ app.get('/api/stream/list', async (req, res) => {
 app.use('/streams', express.static(path.join(__dirname, 'public', 'streams')));
 app.use('/temp-streams', express.static(path.join(__dirname, 'public', 'temp-streams')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Add this after your other routes
+app.get('/api/mux/test', async (req, res) => {
+    try {
+        if (!Video || !Video.Assets) {
+            throw new Error('Mux Video client not initialized');
+        }
+        
+        // Test listing assets
+        const assets = await Video.Assets.list({ limit: 1 });
+        res.json({
+            status: 'success',
+            message: 'Mux connection successful',
+            data: { assetsCount: assets.length }
+        });
+    } catch (error) {
+        console.error('Mux test error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
+    }
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
