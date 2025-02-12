@@ -8,8 +8,6 @@ const mongoose = require('mongoose');
 const Channel = require('./models/Channel');
 const Favorite = require('./models/Favorite');
 const Stream = require('./models/Stream');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { CloudFront } = require('@aws-sdk/client-cloudfront');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const multer = require('multer');
@@ -144,14 +142,8 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
 });
 
-// Configure S3
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
-});
+// Add middleware to serve temp files
+app.use('/temp', express.static(TMP_DIR));
 
 // Get all channels
 app.get('/api/channels', async (req, res) => {
@@ -258,24 +250,22 @@ app.delete('/api/favorites/:channelId', async (req, res) => {
     }
 });
 
-// Video upload endpoint
+// Simplify video upload endpoint
 app.post('/api/upload', upload.single('video'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
     }
 
     try {
-        // Get the absolute path of the uploaded file
-        const filePath = path.resolve(req.file.path);
-        console.log('File uploaded to:', filePath);
-
-        // Verify file exists and is readable
-        await fsPromises.access(filePath, fs.constants.R_OK);
+        const filename = req.file.filename;
+        const publicUrl = `${process.env.BACKEND_URL}/temp/${filename}`;
+        console.log('File public URL:', publicUrl);
 
         res.json({
-            path: filePath,
+            path: req.file.path,
             name: req.file.originalname,
-            size: req.file.size
+            size: req.file.size,
+            url: publicUrl
         });
     } catch (error) {
         console.error('Upload error:', error);
@@ -319,7 +309,7 @@ app.post('/api/stream/start', async (req, res) => {
   }
 });
 
-// Helper function to process videos
+// Update the processNextVideo function
 async function processNextVideo(streamId) {
     const stream = await Stream.findById(streamId);
     if (!stream || stream.status === 'stopped') return;
@@ -333,24 +323,18 @@ async function processNextVideo(streamId) {
 
         if (process.env.STREAM_PROVIDER === 'mux') {
             if (!Video || !Video.Assets) {
-                throw new Error('Mux Video client not available. Please check your configuration.');
+                throw new Error('Mux Video client not available');
             }
             
             console.log('Processing video with Mux...');
-            const videoPath = currentVideo.path;
-            console.log('Video path:', videoPath);
+            const filename = path.basename(currentVideo.path);
+            const publicUrl = `${process.env.BACKEND_URL}/temp/${filename}`;
+            console.log('Video URL:', publicUrl);
 
             try {
-                // Read file data
-                const fileData = await fsPromises.readFile(videoPath);
-                const base64Data = fileData.toString('base64');
-
-                // Create Mux Asset with direct file data
+                // Create Mux Asset using public URL
                 const asset = await Video.Assets.create({
-                    input: [{
-                        type: 'direct_upload',
-                        data: base64Data
-                    }],
+                    input: publicUrl,
                     playback_policy: ['public']
                 });
 
@@ -360,67 +344,71 @@ async function processNextVideo(streamId) {
                     throw new Error('Invalid asset response from Mux');
                 }
 
-                // Get playback ID
                 const playbackId = asset.playback_ids[0].id;
-
-                // Update video with Mux IDs
                 currentVideo.muxAssetId = asset.id;
                 currentVideo.muxPlaybackId = playbackId;
-
-                // Update stream with HLS URL
-                stream.playbackUrl = `https://stream.mux.com/${playbackId}.m3u8`;
+                
+                // Update stream with additional required properties
+                stream.playbackUrl = `https://stream.mux.com/${playbackId}/low.m3u8`;
                 stream.status = 'active';
+                stream.type = 'live';
+                stream.viewers = 0;
+                stream.thumbnail = `https://image.mux.com/${playbackId}/thumbnail.jpg`;
                 await stream.save();
 
             } catch (muxError) {
                 console.error('Mux Asset creation error:', muxError);
-                const errorMessage = typeof muxError === 'object' ? JSON.stringify(muxError) : muxError.message;
-                throw new Error(`Failed to create Mux asset: ${errorMessage}`);
+                throw new Error(typeof muxError === 'object' ? JSON.stringify(muxError) : muxError.message);
             }
         } else {
-            // Default test provider
-            console.log('Processing video with default provider...');
+            // Default test provider code...
             stream.playbackUrl = `${process.env.BACKEND_URL}/streams/${stream._id}/playlist.m3u8`;
             stream.status = 'active';
         }
 
         await stream.save();
 
-        // Clean up local file only after successful processing
-        try {
-            await fsPromises.unlink(currentVideo.path);
-            console.log('Cleaned up local file:', currentVideo.path);
-        } catch (unlinkError) {
-            console.error('Error cleaning up file:', unlinkError);
-            // Don't throw here, as the stream is already processed
-        }
-
     } catch (error) {
         console.error('Video processing error:', error);
         stream.status = 'error';
         stream.error = error.message || 'Unknown error occurred';
         await stream.save();
+        
+        // Don't delete the file if there was an error
+        return;
+    }
+
+    // Clean up local file only after successful processing
+    try {
+        await fsPromises.unlink(currentVideo.path);
+        console.log('Cleaned up local file:', currentVideo.path);
+    } catch (unlinkError) {
+        console.error('Error cleaning up file:', unlinkError);
     }
 }
 
 // Add status check endpoint
 app.get('/api/stream/:streamId/status', async (req, res) => {
-  try {
-    const stream = await Stream.findById(req.params.streamId);
-    if (!stream) {
-      return res.status(404).json({ error: 'Stream not found' });
-    }
+    try {
+        const stream = await Stream.findById(req.params.streamId);
+        if (!stream) {
+            return res.status(404).json({ error: 'Stream not found' });
+        }
 
-    res.json({
-      id: stream._id,
-      name: stream.name,
-      status: stream.status,
-      playbackUrl: stream.playbackUrl,
-      error: stream.error
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get stream status' });
-  }
+        res.json({
+            id: stream._id,
+            name: stream.name,
+            status: stream.status,
+            playbackUrl: stream.playbackUrl,
+            thumbnail: stream.thumbnail,
+            type: stream.type || 'live',
+            viewers: stream.viewers || 0,
+            error: stream.error,
+            userStreams: stream.userStreams || []
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get stream status' });
+    }
 });
 
 // Stop stream endpoint
@@ -458,8 +446,11 @@ app.get('/api/stream/list', async (req, res) => {
     res.json(streams.map(stream => ({
       id: stream._id,
       name: stream.name,
-      playbackUrl: `${process.env.FRONTEND_URL}/stream/${stream._id}`,
-      viewers: 0
+      playbackUrl: stream.playbackUrl,
+      thumbnail: stream.thumbnail,
+      type: stream.type || 'live',
+      viewers: stream.viewers || 0,
+      userStreams: stream.userStreams || []
     })));
   } catch (error) {
     console.error('Stream list error:', error);
@@ -467,10 +458,45 @@ app.get('/api/stream/list', async (req, res) => {
   }
 });
 
+// Add user stream endpoint
+app.post('/api/stream/:streamId/user', async (req, res) => {
+    try {
+        const { userId, playbackUrl } = req.body;
+        const stream = await Stream.findById(req.params.streamId);
+        
+        if (!stream) {
+            return res.status(404).json({ error: 'Stream not found' });
+        }
+
+        await stream.addUserStream(userId, playbackUrl);
+        
+        res.json({
+            success: true,
+            message: 'User stream added',
+            stream: {
+                id: stream._id,
+                name: stream.name,
+                status: stream.status,
+                playbackUrl: stream.playbackUrl,
+                thumbnail: stream.thumbnail,
+                type: stream.type,
+                viewers: stream.viewers,
+                userStreams: stream.userStreams
+            }
+        });
+    } catch (error) {
+        console.error('Error adding user stream:', error);
+        res.status(500).json({ error: 'Failed to add user stream' });
+    }
+});
+
 // Serve static files
 app.use('/streams', express.static(path.join(__dirname, 'public', 'streams')));
 app.use('/temp-streams', express.static(path.join(__dirname, 'public', 'temp-streams')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Add this near other middleware configuration
+app.use('/temp', express.static(TMP_DIR));
 
 // Add this after your other routes
 app.get('/api/mux/test', async (req, res) => {
