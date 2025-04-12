@@ -157,22 +157,22 @@ export default {
         // Get the API base URL
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
         
-        // Create a new channel with the YouTube live stream as HLS
+        // Create a new channel as YouTube Live embed
         const newChannel = {
           id: 'youtube-live-' + channel.id, // Ensure unique ID
           name: `${channel.channelTitle} - Live`,
           channel_number: lastChannelNumber + 1,
-          // The direct YouTube URL will now be processed by our backend proxy
-          stream_url: `${channel.id}`, // Just store the YouTube video ID
+          // Direct YouTube embed URL - this is the most reliable option
+          stream_url: `https://www.youtube.com/embed/${channel.id}?autoplay=1&controls=1&rel=0`,
           logo_url: channel.thumbnail,
-          category: 'Lives', // Changed from 'YouTube Live' to 'Lives'
+          category: 'Lives', 
           is_active: true,
-          is_hls: true, // Changed from false to true
+          is_hls: false, // Changed back to false since we're using embeds
           youtube_live_id: channel.id,
-          type: 'youtube-live-hls' // Changed type to indicate HLS format
+          type: 'youtube-live' // Use the standard embed type
         };
         
-        console.log('Adding YouTube Live channel to store as HLS:', newChannel);
+        console.log('Adding YouTube Live channel as direct embed:', newChannel);
         
         // Add to local store
         channelStore.addChannel(newChannel);

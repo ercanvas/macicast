@@ -12,9 +12,12 @@
       loading="eager"
     ></iframe>
 
+    <!-- Iframe container for fallback embeds -->
+    <div ref="iframeContainer" class="h-full w-full" v-if="showIframe"></div>
+
     <!-- Standard Video Player (remains unchanged) -->
     <video
-      v-else
+      v-else-if="!showIframe"
       ref="videoPlayer"
       class="h-full w-full object-contain"
       autoplay
@@ -128,6 +131,8 @@ export default {
     const currentStreamIndex = ref(0);
     const MAX_MANIFEST_LOAD_RETRIES = 3;
     const manifestLoadRetryCount = ref(0);
+    const iframeContainer = ref(null);
+    const showIframe = ref(false);
 
     const clearTimeouts = () => {
       if (loadingTimeout) {
@@ -234,8 +239,15 @@ export default {
               throw new Error(data.message || 'Failed to fetch YouTube stream data');
             }
             
-            const streamUrl = data.hlsUrl || data.fallbackUrl;
+            // Check if we have a dashUrl for direct embedding
+            if (data.dashUrl) {
+              console.log('Using embedded YouTube player:', data.dashUrl);
+              showIframePlayer(data.dashUrl);
+              return;
+            }
             
+            // Otherwise try normal HLS streaming with hlsUrl or fallbackUrl
+            const streamUrl = data.hlsUrl || data.fallbackUrl;
             if (streamUrl) {
               console.log('Found stream URL from backend proxy:', streamUrl);
               
@@ -257,14 +269,26 @@ export default {
               hlsInstance.on(Hls.Events.ERROR, (event, data) => {
                 console.error('YouTube Live HLS error:', data);
                 if (data.fatal) {
-                  error.value = 'YouTube HLS yayın yüklenemedi. Tekrar deneyin.';
+                  // If HLS streaming fails, try to use the iframe embed
+                  if (videoPlayer.value && data.dashUrl) {
+                    console.log('Falling back to iframe embed');
+                    showIframePlayer(data.dashUrl);
+                  } else {
+                    error.value = 'YouTube HLS yayın yüklenemedi. Tekrar deneyin.';
+                  }
                 }
               });
               
               hls = hlsInstance;
-            } else {
-              // If no stream URL is available, show an error
-              console.error('No stream URL found for YouTube Live');
+            } 
+            // If no direct stream URL but we have a dash URL for embedding
+            else if (data.dashUrl) {
+              console.log('No direct stream URL found, using embedded player:', data.dashUrl);
+              showIframePlayer(data.dashUrl);
+            } 
+            // No usable URLs at all
+            else {
+              console.error('No stream URLs found for YouTube Live');
               error.value = 'YouTube yayını bulunamadı. Lütfen tekrar deneyin.';
             }
           })
@@ -780,6 +804,42 @@ export default {
       }
     };
 
+    // Function to show iframe player for YouTube embeds
+    const showIframePlayer = (embedUrl) => {
+      // Make sure we have the container
+      if (!iframeContainer.value) {
+        console.error('Iframe container not found');
+        error.value = 'Video oynatıcı hazırlanamadı';
+        return;
+      }
+
+      // Hide the video element if showing iframe
+      showIframe.value = true;
+      
+      // Clear any existing content in the iframe container
+      iframeContainer.value.innerHTML = '';
+      
+      // Create the iframe element
+      const iframe = document.createElement('iframe');
+      iframe.className = 'h-full w-full';
+      iframe.src = embedUrl;
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+      iframe.allowFullscreen = true;
+      iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms';
+      iframe.referrerPolicy = 'origin';
+      iframe.loading = 'eager';
+      iframe.style.border = 'none';
+      
+      // Add the iframe to the container
+      iframeContainer.value.appendChild(iframe);
+      
+      // Hide loading and error states
+      isLoading.value = false;
+      error.value = null;
+      
+      console.log('Iframe player shown with URL:', embedUrl);
+    };
+
     watch(currentChannel, async (newChannel) => {
       if (newChannel?.url || newChannel?.stream_url) {
         error.value = null;
@@ -808,9 +868,26 @@ export default {
       }
     });
 
-    onUnmounted(async () => {
+    onUnmounted(() => {
       isDestroyed.value = true;
-      await cleanupVideo();
+      
+      // Destroy HLS instance if it exists
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      
+      // Clean up iframe if it exists
+      if (iframeContainer.value) {
+        iframeContainer.value.innerHTML = '';
+      }
+      
+      // Clear any pending timeouts
+      clearTimeouts();
+      
+      if (playAttemptTimeout) {
+        clearTimeout(playAttemptTimeout);
+      }
     });
 
     return {
@@ -829,7 +906,10 @@ export default {
       handleWaiting,
       handleEnded,
       retryLoading,
-      togglePlay
+      togglePlay,
+      iframeContainer,
+      showIframe,
+      volumeIcon
     };
   }
 };
