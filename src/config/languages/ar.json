@@ -8,7 +8,10 @@
     "retry": "إعادة المحاولة",
     "browserNotSupported": "متصفحك لا يدعم تشغيل الفيديو.",
     "errorLoading": "خطأ في تحميل البث. يرجى المحاولة مرة أخرى.",
-    "activeControl": "التحكم نشط"
+    "activeControl": "التحكم نشط",
+    "tagline": "شاهد ما سيأتي بعد ذلك",
+    "nowPlaying": "يتم التشغيل الآن",
+    "paused": "متوقف مؤقتًا"
   },
   "channels": {
     "title": "القنوات",

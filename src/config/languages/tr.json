@@ -8,7 +8,10 @@
     "retry": "Yeniden Dene",
     "browserNotSupported": "Tarayıcınız video oynatmayı desteklemiyor.",
     "errorLoading": "Yayın yüklenemedi. Lütfen tekrar deneyin.",
-    "activeControl": "Kontrol Aktif"
+    "activeControl": "Kontrol Aktif",
+    "tagline": "Bundan sonra ne olacağını izleyin",
+    "nowPlaying": "Şimdi Oynatılıyor",
+    "paused": "Duraklatıldı"
   },
   "channels": {
     "title": "Kanallar",

@@ -127,10 +127,12 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useChannelStore } from '../stores/channelStore';
 import { storeToRefs } from 'pinia';
 import Hls from 'hls.js';
+import { useI18n } from 'vue-i18n';
 
 export default {
   emits: ['toggle-remote', 'toggle-channels'],
   setup(props, { emit }) {
+    const { t } = useI18n();
     const store = useChannelStore();
     const { currentChannel, volumeInfo } = storeToRefs(store);
     const videoPlayer = ref(null);
@@ -156,7 +158,7 @@ export default {
     const showIframe = ref(false);
     const youtubeOverlay = ref(null);
     const appTitle = ref('Macicast');
-    const defaultTitle = 'Macicast — Watch what next brings';
+    const getDefaultTitle = () => `Macicast — ${t('app.tagline')}`;
 
     // Handle keyboard events on the overlay
     const handleKeyDown = (event) => {
@@ -971,17 +973,17 @@ export default {
     // Function to update document title based on channel and playback state
     const updateDocumentTitle = () => {
       if (error.value || !currentChannel.value) {
-        document.title = defaultTitle;
+        document.title = getDefaultTitle();
         return;
       }
       
       const channelName = currentChannel.value.name || 'Unknown Channel';
-      const playbackStatus = isPlaying.value ? 'Now Playing' : 'Paused';
+      const playbackStatus = isPlaying.value ? t('app.nowPlaying') : t('app.paused');
       
       if (isLoading.value) {
-        document.title = `${channelName} — ${defaultTitle} (Loading...)`;
+        document.title = `${channelName} — ${appTitle.value} (${t('app.loading')})`;
       } else {
-        document.title = `${channelName} — ${defaultTitle} (${playbackStatus})`;
+        document.title = `${channelName} — ${appTitle.value} (${playbackStatus})`;
       }
     };
 
@@ -1003,7 +1005,7 @@ export default {
     // Update title when error state changes
     watch(error, () => {
       if (error.value) {
-        document.title = defaultTitle;
+        document.title = getDefaultTitle();
       } else {
         updateDocumentTitle();
       }
@@ -1086,7 +1088,7 @@ export default {
       }
       
       // Reset document title to default when component unmounts
-      document.title = defaultTitle;
+      document.title = getDefaultTitle();
     });
 
     return {

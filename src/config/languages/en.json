@@ -8,7 +8,10 @@
     "retry": "Retry",
     "browserNotSupported": "Your browser does not support video playback.",
     "errorLoading": "Error loading the stream. Please try again.",
-    "activeControl": "Control Active"
+    "activeControl": "Control Active",
+    "tagline": "Watch what next brings",
+    "nowPlaying": "Now Playing",
+    "paused": "Paused"
   },
   "channels": {
     "title": "Channels",
