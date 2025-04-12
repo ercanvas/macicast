@@ -163,6 +163,13 @@
           <LanguageSelector @close="showLanguageSelector = false" />
         </div>
       </div>
+
+      <!-- User Profile Modal -->
+      <div v-if="showUserProfile" class="modal-backdrop">
+        <div class="modal-content">
+          <UserProfile @close="showUserProfile = false" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -180,6 +187,7 @@ import AddChannel from './components/AddChannel.vue'
 import YouTubeToHLS from './components/YouTubeToHLS.vue'
 import YouTubeLives from './components/YouTubeLives.vue'
 import LanguageSelector from './components/LanguageSelector.vue'
+import UserProfile from './components/UserProfile.vue'
 
 export default {
   name: 'App',
@@ -192,7 +200,8 @@ export default {
     AddChannel,
     YouTubeToHLS,
     YouTubeLives,
-    LanguageSelector
+    LanguageSelector,
+    UserProfile
   },
   setup() {
     // Reference to TVScreen component
@@ -211,6 +220,7 @@ export default {
     const showYouTubeConverter = ref(false)
     const showYoutubeLives = ref(false)
     const showLanguageSelector = ref(false)
+    const showUserProfile = ref(false)
     let channelInfoTimeout = null
 
     // Check if device is mobile
@@ -310,6 +320,12 @@ export default {
         showYoutubeLives.value = true;
       } else if (e.key.toLowerCase() === 'e') {
         showLanguageSelector.value = !showLanguageSelector.value;
+      } else if (e.key.toLowerCase() === 'p') {
+        // Toggle user profile
+        showUserProfile.value = !showUserProfile.value;
+        // Hide other panels when profile is shown
+        showChannelList.value = false;
+        showRemote.value = false;
       }
     };
 
@@ -394,6 +410,7 @@ export default {
       showYouTubeConverter,
       showYoutubeLives,
       showLanguageSelector,
+      showUserProfile,
       languageStore,
       selectLanguage,
       $t,

@@ -48,6 +48,25 @@
   "youtubeLives": {
     "live": "LIVE",
     "viewers": "viewers",
-    "addChannelTitle": "Add YouTube Channel"
+    "addChannelTitle": "Add YouTube Channel",
+    "title": "YouTube Live Channels",
+    "searchPlaceholder": "Search YouTube channels...",
+    "searching": "Searching YouTube..."
+  },
+  "profile": {
+    "title": "User Profile",
+    "retry": "Retry",
+    "accountInfo": "Account Information",
+    "username": "Username",
+    "role": "Role",
+    "status": "Status",
+    "online": "Online",
+    "offline": "Offline",
+    "channelLists": "My Channel Lists",
+    "watchParties": "My Watch Parties",
+    "logout": "Logout",
+    "notLoggedIn": "You are not logged in",
+    "fetchFailed": "Failed to fetch profile",
+    "fetchError": "Error fetching profile"
   }
 } 
