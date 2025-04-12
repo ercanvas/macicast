@@ -1,8 +1,15 @@
 <template>
   <div class="youtube-to-hls">
     <div class="card bg-gray-900 border-gray-800 shadow-lg">
-      <div class="card-header bg-gray-800 p-4">
+      <div class="card-header bg-gray-800 p-4 flex justify-between items-center">
         <h2 class="text-xl font-bold text-white">YouTube to HLS Converter</h2>
+        <button 
+          @click="closeModal" 
+          class="rounded-full h-8 w-8 bg-gray-700 hover:bg-gray-600 flex items-center justify-center focus:outline-none transition-colors"
+          title="Close"
+        >
+          <i class="bi bi-x-lg text-gray-300"></i>
+        </button>
       </div>
       <div class="card-body p-4">
         <div v-if="step === 'search'">
