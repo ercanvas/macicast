@@ -1,16 +1,34 @@
 <template>
   <div class="relative h-full w-full bg-black">
-    <!-- YouTube Live Embed -->
-    <iframe
-      v-if="currentChannel?.type === 'youtube-live' || showIframe"
-      class="h-full w-full"
-      :src="iframeUrl || currentChannel?.stream_url"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-      allowfullscreen
-      sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-      referrerpolicy="origin"
-      loading="eager"
-    ></iframe>
+    <!-- YouTube Player Container -->
+    <div class="relative h-full w-full" v-if="currentChannel?.type === 'youtube-live' || showIframe">
+      <!-- YouTube iframe -->
+      <iframe
+        class="h-full w-full"
+        :src="iframeUrl || currentChannel?.stream_url"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowfullscreen
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        referrerpolicy="origin"
+        loading="eager"
+      ></iframe>
+      
+      <!-- Transparent overlay to capture keyboard events and prevent interaction with YouTube controls -->
+      <div 
+        class="absolute inset-0 z-10" 
+        @keydown="handleKeyDown"
+        tabindex="0"
+        ref="youtubeOverlay"
+        @mousedown.prevent
+        @touchstart.prevent
+        @click.prevent
+      >
+        <!-- Optional: Small indicator that the overlay is active -->
+        <div class="absolute top-4 right-4 bg-black/30 text-white text-xs px-2 py-1 rounded">
+          Kontrol Aktif
+        </div>
+      </div>
+    </div>
 
     <!-- Iframe container for fallback embeds -->
     <!-- <div ref="iframeContainer" class="h-full w-full" v-if="showIframe"></div> -->
@@ -102,7 +120,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useChannelStore } from '../stores/channelStore';
 import { storeToRefs } from 'pinia';
 import Hls from 'hls.js';
@@ -133,6 +151,7 @@ export default {
     const MAX_MANIFEST_LOAD_RETRIES = 3;
     const manifestLoadRetryCount = ref(0);
     const showIframe = ref(false);
+    const youtubeOverlay = ref(null);
 
     const clearTimeouts = () => {
       if (loadingTimeout) {
@@ -826,7 +845,71 @@ export default {
       showIframe.value = true;
       isLoading.value = false;
       error.value = null;
+      
+      // Focus the overlay after showing the iframe
+      setTimeout(() => {
+        if (youtubeOverlay.value) {
+          youtubeOverlay.value.focus();
+        }
+      }, 1000);
     };
+
+    // Handle keyboard events on the overlay
+    const handleKeyDown = (event) => {
+      console.log('Key pressed on overlay:', event.key);
+      
+      // Prevent default behavior for certain keys
+      if (['c', 'r', 'l', 's', 'y'].includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        
+        // Handle specific keys
+        switch(event.key.toLowerCase()) {
+          case 'c':
+            // Channel list toggle
+            console.log('Toggle channel list');
+            event.target.blur();
+            store.toggleChannelListVisible();
+            break;
+          case 'r':
+            // Remote toggle
+            console.log('Toggle remote');
+            event.target.blur();
+            store.toggleRemoteVisible();
+            break;
+          case 'l':
+            // Toggle logs or another function
+            console.log('L key pressed');
+            break;
+          case 's':
+            // Settings or search
+            console.log('S key pressed');
+            break;
+          case 'y':
+            // Custom YouTube action
+            console.log('Y key pressed');
+            break;
+        }
+      }
+    };
+    
+    // Focus the overlay when a YouTube video is loaded
+    watch([() => currentChannel.value?.type, showIframe], async ([newType, showingIframe]) => {
+      if ((newType === 'youtube-live' || showingIframe) && youtubeOverlay.value) {
+        // Wait for next tick to ensure the DOM is updated
+        await nextTick();
+        youtubeOverlay.value.focus();
+      }
+    });
+    
+    // Focus the overlay when iframe URL changes
+    watch(iframeUrl, async (newUrl) => {
+      if (newUrl && youtubeOverlay.value) {
+        // Wait a moment for the iframe to load
+        setTimeout(() => {
+          youtubeOverlay.value.focus();
+        }, 1000);
+      }
+    });
 
     watch(currentChannel, async (newChannel) => {
       if (newChannel?.url || newChannel?.stream_url) {
@@ -890,6 +973,13 @@ export default {
       }
     });
 
+    onMounted(() => {
+      // Focus the overlay if YouTube is already playing
+      if ((currentChannel.value?.type === 'youtube-live' || showIframe.value) && youtubeOverlay.value) {
+        youtubeOverlay.value.focus();
+      }
+    });
+
     return {
       videoPlayer,
       currentChannel,
@@ -909,7 +999,9 @@ export default {
       togglePlay,
       iframeUrl,
       showIframe,
-      volumeIcon
+      volumeIcon,
+      youtubeOverlay,
+      handleKeyDown
     };
   }
 };
@@ -962,5 +1054,16 @@ button:active {
   .visible-mobile {
     display: none; /* 1024 pikselden daha büyük ekranlarda gizle */
   }
+}
+
+/* Make the overlay non-interactive visually but still capture events */
+[tabindex="0"]:focus {
+  outline: none;
+}
+
+/* Ensure the overlay doesn't interfere with video viewing */
+.absolute.inset-0.z-10 {
+  pointer-events: all; /* Capture all pointer events */
+  cursor: default;
 }
 </style>
