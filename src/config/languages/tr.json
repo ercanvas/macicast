@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Macicast TV",
+    "turnPhone": "Telefonunuzu Çevirin",
+    "betterExperience": "Daha iyi bir deneyim için telefonunuzu yatay konuma getirin",
+    "loading": "Kanal yükleniyor...",
+    "loadingTimeout": "Yükleme zaman aşımına uğradı",
+    "retry": "Yeniden Dene",
+    "browserNotSupported": "Tarayıcınız video oynatmayı desteklemiyor.",
+    "errorLoading": "Yayın yüklenemedi. Lütfen tekrar deneyin.",
+    "activeControl": "Kontrol Aktif"
+  },
+  "channels": {
+    "title": "Kanallar",
+    "search": "Kanal ara...",
+    "all": "Tümü",
+    "addChannel": "Kanal Ekle",
+    "addYouTube": "YouTube Canlı Ekle",
+    "resetChannels": "Kanalları Sıfırla"
+  },
+  "remote": {
+    "title": "Kumanda",
+    "volume": "Ses",
+    "channel": "Kanal"
+  },
+  "languages": {
+    "title": "Diller",
+    "english": "İngilizce",
+    "turkish": "Türkçe",
+    "russian": "Rusça",
+    "arabic": "Arapça"
+  },
+  "errors": {
+    "streamNotAvailable": "Yayın kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+    "connectionFailed": "Bağlantı kurulamadı. Lütfen daha sonra tekrar deneyin.",
+    "playbackError": "Oynatma hatası oluştu.",
+    "tryingAlternative": "Alternatif kaynak deneniyor"
+  }
+} 

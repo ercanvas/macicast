@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Macicast TV",
+    "turnPhone": "Поверните телефон",
+    "betterExperience": "Для лучшего опыта поверните телефон в альбомный режим",
+    "loading": "Загрузка канала...",
+    "loadingTimeout": "Время загрузки истекло",
+    "retry": "Повторить",
+    "browserNotSupported": "Ваш браузер не поддерживает воспроизведение видео.",
+    "errorLoading": "Ошибка загрузки потока. Пожалуйста, попробуйте еще раз.",
+    "activeControl": "Контроль Активен"
+  },
+  "channels": {
+    "title": "Каналы",
+    "search": "Поиск каналов...",
+    "all": "Все",
+    "addChannel": "Добавить канал",
+    "addYouTube": "Добавить YouTube Live",
+    "resetChannels": "Сбросить каналы"
+  },
+  "remote": {
+    "title": "Пульт",
+    "volume": "Громкость",
+    "channel": "Канал"
+  },
+  "languages": {
+    "title": "Языки",
+    "english": "Английский",
+    "turkish": "Турецкий",
+    "russian": "Русский",
+    "arabic": "Арабский"
+  },
+  "errors": {
+    "streamNotAvailable": "Поток недоступен. Пожалуйста, попробуйте позже.",
+    "connectionFailed": "Соединение не удалось. Пожалуйста, попробуйте позже.",
+    "playbackError": "Произошла ошибка воспроизведения.",
+    "tryingAlternative": "Пробуем альтернативный источник"
+  }
+} 

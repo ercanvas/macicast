@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "Macicast TV",
+    "turnPhone": "Turn Your Phone",
+    "betterExperience": "For a better experience, turn your phone to landscape mode",
+    "loading": "Loading channel...",
+    "loadingTimeout": "Loading timed out",
+    "retry": "Retry",
+    "browserNotSupported": "Your browser does not support video playback.",
+    "errorLoading": "Error loading the stream. Please try again.",
+    "activeControl": "Control Active"
+  },
+  "channels": {
+    "title": "Channels",
+    "search": "Search channels...",
+    "all": "All",
+    "addChannel": "Add Channel",
+    "addYouTube": "Add YouTube Live",
+    "resetChannels": "Reset Channels"
+  },
+  "remote": {
+    "title": "Remote",
+    "volume": "Volume",
+    "channel": "Channel"
+  },
+  "languages": {
+    "title": "Languages",
+    "english": "English",
+    "turkish": "Turkish",
+    "russian": "Russian",
+    "arabic": "Arabic"
+  },
+  "errors": {
+    "streamNotAvailable": "Stream not available. Please try again later.",
+    "connectionFailed": "Connection failed. Please try again later.",
+    "playbackError": "Playback error occurred.",
+    "tryingAlternative": "Trying alternative source"
+  }
+} 

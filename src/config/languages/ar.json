@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "ماكيكاست تي في",
+    "turnPhone": "قم بتدوير هاتفك",
+    "betterExperience": "للحصول على تجربة أفضل، قم بتدوير هاتفك إلى الوضع الأفقي",
+    "loading": "جاري تحميل القناة...",
+    "loadingTimeout": "انتهت مهلة التحميل",
+    "retry": "إعادة المحاولة",
+    "browserNotSupported": "متصفحك لا يدعم تشغيل الفيديو.",
+    "errorLoading": "خطأ في تحميل البث. يرجى المحاولة مرة أخرى.",
+    "activeControl": "التحكم نشط"
+  },
+  "channels": {
+    "title": "القنوات",
+    "search": "البحث عن قنوات...",
+    "all": "الكل",
+    "addChannel": "إضافة قناة",
+    "addYouTube": "إضافة بث يوتيوب مباشر",
+    "resetChannels": "إعادة تعيين القنوات"
+  },
+  "remote": {
+    "title": "جهاز التحكم",
+    "volume": "الصوت",
+    "channel": "القناة"
+  },
+  "languages": {
+    "title": "اللغات",
+    "english": "الإنجليزية",
+    "turkish": "التركية",
+    "russian": "الروسية",
+    "arabic": "العربية"
+  },
+  "errors": {
+    "streamNotAvailable": "البث غير متاح. يرجى المحاولة لاحقاً.",
+    "connectionFailed": "فشل الاتصال. يرجى المحاولة لاحقاً.",
+    "playbackError": "حدث خطأ في التشغيل.",
+    "tryingAlternative": "جاري تجربة مصدر بديل"
+  }
+} 
