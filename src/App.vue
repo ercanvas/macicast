@@ -170,6 +170,13 @@
           <UserProfile @close="showUserProfile = false" />
         </div>
       </div>
+
+      <!-- Auth Modal -->
+      <div v-if="showAuth" class="modal-backdrop">
+        <div class="modal-content">
+          <Auth @close="showAuth = false" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -188,6 +195,7 @@ import YouTubeToHLS from './components/YouTubeToHLS.vue'
 import YouTubeLives from './components/YouTubeLives.vue'
 import LanguageSelector from './components/LanguageSelector.vue'
 import UserProfile from './components/UserProfile.vue'
+import Auth from './components/Auth.vue'
 
 export default {
   name: 'App',
@@ -201,7 +209,8 @@ export default {
     YouTubeToHLS,
     YouTubeLives,
     LanguageSelector,
-    UserProfile
+    UserProfile,
+    Auth
   },
   setup() {
     // Reference to TVScreen component
@@ -221,6 +230,7 @@ export default {
     const showYoutubeLives = ref(false)
     const showLanguageSelector = ref(false)
     const showUserProfile = ref(false)
+    const showAuth = ref(false)
     let channelInfoTimeout = null
 
     // Check if device is mobile
@@ -326,6 +336,13 @@ export default {
         // Hide other panels when profile is shown
         showChannelList.value = false;
         showRemote.value = false;
+      } else if (e.key.toLowerCase() === 'a') {
+        // Toggle auth panel
+        showAuth.value = !showAuth.value;
+        // Hide other panels when auth is shown
+        showChannelList.value = false;
+        showRemote.value = false;
+        showUserProfile.value = false;
       }
     };
 
@@ -411,6 +428,7 @@ export default {
       showYoutubeLives,
       showLanguageSelector,
       showUserProfile,
+      showAuth,
       languageStore,
       selectLanguage,
       $t,

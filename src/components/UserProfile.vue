@@ -13,11 +13,25 @@
       </div>
     </div>
 
-    <div v-else-if="userError" class="bg-red-900/50 p-4 rounded-lg mb-6">
-      <p class="text-white">{{ userError }}</p>
-      <button @click="fetchUserProfile" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-        {{ $t('profile.retry') || 'Retry' }}
-      </button>
+    <div v-else-if="userError" class="bg-gray-800/50 p-6 rounded-lg mb-6 text-center">
+      <i class="bi bi-person-lock text-4xl text-gray-400 mb-4 block"></i>
+      <p class="text-white mb-4">{{ userError }}</p>
+      
+      <div class="space-y-3">
+        <button 
+          @click="showAuth('login')" 
+          class="w-full bg-primary hover:bg-primary/80 text-white py-2 px-4 rounded transition-colors"
+        >
+          {{ $t('profile.login') || 'Login' }}
+        </button>
+        
+        <button 
+          @click="showAuth('signup')" 
+          class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded transition-colors"
+        >
+          {{ $t('profile.signup') || 'Sign Up' }}
+        </button>
+      </div>
     </div>
 
     <div v-else class="space-y-6">
@@ -98,6 +112,13 @@
         </button>
       </div>
     </div>
+
+    <Auth 
+      v-if="showAuthComponent" 
+      :initial-mode="authMode" 
+      @close="showAuthComponent = false" 
+      @auth-success="handleAuthSuccess" 
+    />
   </div>
 </template>
 
@@ -105,15 +126,21 @@
 import { ref, onMounted } from 'vue';
 import { useLanguageStore } from '../stores/languageStore';
 import { endpoints } from '../config/api';
+import Auth from './Auth.vue';
 
 export default {
   name: 'UserProfile',
   emits: ['close'],
+  components: {
+    Auth
+  },
   setup(props, { emit }) {
     const languageStore = useLanguageStore();
     const user = ref(null);
     const userLoading = ref(true);
     const userError = ref(null);
+    const showAuthComponent = ref(false);
+    const authMode = ref('login');
 
     const fetchUserProfile = async () => {
       userLoading.value = true;
@@ -171,6 +198,17 @@ export default {
       window.location.reload();
     };
 
+    const showAuth = (mode) => {
+      authMode.value = mode;
+      showAuthComponent.value = true;
+    };
+
+    const handleAuthSuccess = (userData) => {
+      user.value = userData;
+      showAuthComponent.value = false;
+      fetchUserProfile(); // Refresh the profile data
+    };
+
     onMounted(() => {
       fetchUserProfile();
     });
@@ -185,7 +223,11 @@ export default {
       userError,
       fetchUserProfile,
       logout,
-      $t
+      $t,
+      showAuthComponent,
+      authMode,
+      showAuth,
+      handleAuthSuccess
     };
   }
 };

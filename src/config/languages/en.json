@@ -67,6 +67,27 @@
     "logout": "Logout",
     "notLoggedIn": "You are not logged in",
     "fetchFailed": "Failed to fetch profile",
-    "fetchError": "Error fetching profile"
+    "fetchError": "Error fetching profile",
+    "login": "Login",
+    "signup": "Sign Up"
+  },
+  "auth": {
+    "loginTitle": "Login",
+    "signupTitle": "Sign Up",
+    "emailOrUsername": "Email or Username",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "username": "Username",
+    "displayName": "Display Name",
+    "login": "Login",
+    "signup": "Sign Up",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signupPrompt": "Sign up now",
+    "loginPrompt": "Login instead",
+    "usernameRequirements": "Letters, numbers and underscores only",
+    "clickToUpload": "Click to upload a profile picture",
+    "passwordMatch": "Passwords don't match"
   }
 } 
