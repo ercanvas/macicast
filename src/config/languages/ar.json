@@ -35,5 +35,11 @@
     "connectionFailed": "فشل الاتصال. يرجى المحاولة لاحقاً.",
     "playbackError": "حدث خطأ في التشغيل.",
     "tryingAlternative": "جاري تجربة مصدر بديل"
+  },
+  "channelList": {
+    "title": "قائمة القنوات",
+    "liveStreams": "البث المباشر",
+    "searchPlaceholder": "البحث عن قنوات...",
+    "allChannels": "جميع القنوات"
   }
 } 

@@ -35,5 +35,11 @@
     "connectionFailed": "Соединение не удалось. Пожалуйста, попробуйте позже.",
     "playbackError": "Произошла ошибка воспроизведения.",
     "tryingAlternative": "Пробуем альтернативный источник"
+  },
+  "channelList": {
+    "title": "Список каналов",
+    "liveStreams": "Прямые трансляции",
+    "searchPlaceholder": "Поиск каналов...",
+    "allChannels": "Все каналы"
   }
 } 

@@ -156,7 +156,7 @@ export default {
     const showIframe = ref(false);
     const youtubeOverlay = ref(null);
     const appTitle = ref('Macicast');
-    const defaultTitle = 'Macicast';
+    const defaultTitle = 'Macicast — Watch what next brings';
 
     // Handle keyboard events on the overlay
     const handleKeyDown = (event) => {

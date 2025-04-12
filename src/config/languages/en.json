@@ -35,5 +35,11 @@
     "connectionFailed": "Connection failed. Please try again later.",
     "playbackError": "Playback error occurred.",
     "tryingAlternative": "Trying alternative source"
+  },
+  "channelList": {
+    "title": "Channel List",
+    "liveStreams": "Live Streams",
+    "searchPlaceholder": "Search channels...",
+    "allChannels": "All Channels"
   }
 } 

@@ -35,5 +35,11 @@
     "connectionFailed": "Bağlantı kurulamadı. Lütfen daha sonra tekrar deneyin.",
     "playbackError": "Oynatma hatası oluştu.",
     "tryingAlternative": "Alternatif kaynak deneniyor"
+  },
+  "channelList": {
+    "title": "Kanal Listesi",
+    "liveStreams": "Canlı Yayınlar",
+    "searchPlaceholder": "Kanal ara...",
+    "allChannels": "Tüm Kanallar"
   }
 } 
