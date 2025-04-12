@@ -156,6 +156,13 @@
           <YouTubeLives @close="showYoutubeLives = false" />
         </div>
       </div>
+
+      <!-- Language Selector Modal -->
+      <div v-if="showLanguageSelector" class="modal-backdrop">
+        <div class="modal-content">
+          <LanguageSelector @close="showLanguageSelector = false" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -163,6 +170,7 @@
 <script>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useChannelStore } from './stores/channelStore'
+import { useLanguageStore } from './stores/languageStore'
 import TVScreen from './components/TVScreen.vue'
 import ChannelList from './components/ChannelList.vue'
 import RemoteControl from './components/RemoteControl.vue'
@@ -171,6 +179,7 @@ import TheSidebar from './components/TheSidebar.vue'
 import AddChannel from './components/AddChannel.vue'
 import YouTubeToHLS from './components/YouTubeToHLS.vue'
 import YouTubeLives from './components/YouTubeLives.vue'
+import LanguageSelector from './components/LanguageSelector.vue'
 
 export default {
   name: 'App',
@@ -182,10 +191,12 @@ export default {
     TheSidebar,
     AddChannel,
     YouTubeToHLS,
-    YouTubeLives
+    YouTubeLives,
+    LanguageSelector
   },
   setup() {
     const store = useChannelStore()
+    const languageStore = useLanguageStore()
     const showChannelList = ref(false)
     const showRemote = ref(false)
     const showChannelInfo = ref(false)
@@ -196,6 +207,7 @@ export default {
     const showAddChannel = ref(false)
     const showYouTubeConverter = ref(false)
     const showYoutubeLives = ref(false)
+    const showLanguageSelector = ref(false)
     let channelInfoTimeout = null
 
     // Check if device is mobile
@@ -293,6 +305,8 @@ export default {
         showYouTubeConverter.value = true;
       } else if (e.key.toLowerCase() === 'l') {
         showYoutubeLives.value = true;
+      } else if (e.key.toLowerCase() === 'e') {
+        showLanguageSelector.value = !showLanguageSelector.value;
       }
     };
 
@@ -337,6 +351,15 @@ export default {
       sidebarOpen.value = !sidebarOpen.value
     }
 
+    const selectLanguage = (langCode) => {
+      languageStore.setLanguage(langCode);
+      showLanguageSelector.value = false;
+    };
+
+    const $t = (key) => {
+      return languageStore.t(key);
+    };
+
     return {
       showChannelList,
       showRemote,
@@ -360,7 +383,11 @@ export default {
       toggleSidebar,
       showAddChannel,
       showYouTubeConverter,
-      showYoutubeLives
+      showYoutubeLives,
+      showLanguageSelector,
+      languageStore,
+      selectLanguage,
+      $t
     }
   }
 }
