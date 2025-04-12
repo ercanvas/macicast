@@ -883,16 +883,6 @@ app.get('/api/status', async (req, res) => {
     }
 });
 
-// Add user routes
-const userRoutes = require('./routes/users');
-app.use('/api/users', userRoutes);
-
-// Add JWT_SECRET to environment variables if not present
-if (!process.env.JWT_SECRET) {
-  console.warn('⚠️ JWT_SECRET not set in environment variables. Using a default secret (not secure for production)');
-  process.env.JWT_SECRET = 'macicast-default-jwt-secret-key-change-in-production';
-}
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

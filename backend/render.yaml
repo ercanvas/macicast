@@ -11,8 +11,6 @@ services:
         value: production
       - key: PORT
         value: 3000
-      - key: JWT_SECRET
-        fromGroup: macicast-secrets
       - key: MONGO_PUBLIC_URL
         fromGroup: macicast-secrets
       - key: BACKEND_URL

@@ -1,8 +1,5 @@
 <template>
-  <!-- Show Login component when user is not authenticated -->
-  <Login v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
-  
-  <div v-else class="min-h-screen bg-gradient-to-br from-gray-900 to-black">
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 to-black">
     <!-- Mobil Dikey Uyarısı -->
     <div v-if="isMobilePortrait" 
          class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center">
@@ -154,7 +151,6 @@
 <script>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useChannelStore } from './stores/channelStore'
-import { useAuthStore } from './stores/auth'
 import TVScreen from './components/TVScreen.vue'
 import ChannelList from './components/ChannelList.vue'
 import RemoteControl from './components/RemoteControl.vue'
@@ -162,8 +158,6 @@ import ManageStream from './components/ManageStream.vue'
 import TheSidebar from './components/TheSidebar.vue'
 import AddChannel from './components/AddChannel.vue'
 import YouTubeToHLS from './components/YouTubeToHLS.vue'
-import Login from './components/Login.vue'
-import UserProfile from './components/UserProfile.vue'
 
 export default {
   name: 'App',
@@ -174,13 +168,10 @@ export default {
     ManageStream,
     TheSidebar,
     AddChannel,
-    YouTubeToHLS,
-    Login,
-    UserProfile
+    YouTubeToHLS
   },
   setup() {
     const store = useChannelStore()
-    const authStore = useAuthStore()
     const showChannelList = ref(false)
     const showRemote = ref(false)
     const showChannelInfo = ref(false)
@@ -192,20 +183,10 @@ export default {
     const showYouTubeConverter = ref(false)
     let channelInfoTimeout = null
 
-    // Check if user is logged in
-    const isLoggedIn = computed(() => authStore.isAuthenticated)
-    
-    // Handle login success
-    const handleLoginSuccess = (user) => {
-      console.log('User logged in successfully:', user)
+    // Check if device is mobile
+    const checkDevice = () => {
+      isMobile.value = window.innerWidth < 768 // or any breakpoint you prefer
     }
-
-    const volumeIcon = computed(() => {
-      const level = store.volumeInfo.level;
-      if (level === 0) return 'bi-volume-mute';
-      if (level < 30) return 'bi-volume-down';
-      return 'bi-volume-up';
-    });
 
     // Ekran yönü kontrolü
     const checkOrientation = () => {
@@ -214,11 +195,6 @@ export default {
       } else {
         isMobilePortrait.value = false
       }
-    }
-
-    // Check if device is mobile
-    const checkDevice = () => {
-      isMobile.value = window.innerWidth < 768 // or any breakpoint you prefer
     }
 
     // Kanal değiştirme fonksiyonu
@@ -344,7 +320,12 @@ export default {
       toggleChannelList,
       toggleRemote,
       toggleChannels,
-      volumeIcon,
+      volumeIcon: computed(() => {
+        const level = store.volumeInfo.level;
+        if (level === 0) return 'bi-volume-mute';
+        if (level < 30) return 'bi-volume-down';
+        return 'bi-volume-up';
+      }),
       volumeInfo: computed(() => store.volumeInfo),
       isMobile,
       showStreamManager,
@@ -352,9 +333,7 @@ export default {
       sidebarOpen,
       toggleSidebar,
       showAddChannel,
-      showYouTubeConverter,
-      isLoggedIn,
-      handleLoginSuccess
+      showYouTubeConverter
     }
   }
 }
