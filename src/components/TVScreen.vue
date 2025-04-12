@@ -127,7 +127,7 @@ import Hls from 'hls.js';
 
 export default {
   emits: ['toggle-remote', 'toggle-channels'],
-  setup() {
+  setup(props, { emit }) {
     const store = useChannelStore();
     const { currentChannel, volumeInfo } = storeToRefs(store);
     const videoPlayer = ref(null);
@@ -152,6 +152,78 @@ export default {
     const manifestLoadRetryCount = ref(0);
     const showIframe = ref(false);
     const youtubeOverlay = ref(null);
+
+    // Handle keyboard events on the overlay
+    const handleKeyDown = (event) => {
+      console.log('Key pressed on overlay:', event.key);
+      
+      // Prevent default behavior for certain keys
+      if (['c', 'r', 'l', 's', 'y'].includes(event.key.toLowerCase())) {
+        event.preventDefault();
+        
+        // Handle specific keys
+        switch(event.key.toLowerCase()) {
+          case 'c':
+            // Channel list toggle
+            console.log('Toggle channel list');
+            event.target.blur();
+            // Use emit instead of directly calling store method
+            emit('toggle-channels');
+            break;
+          case 'r':
+            // Remote toggle
+            console.log('Toggle remote');
+            event.target.blur();
+            emit('toggle-remote');
+            break;
+          case 'l':
+            // Toggle logs or another function
+            console.log('L key pressed');
+            break;
+          case 's':
+            // Settings or search
+            console.log('S key pressed');
+            break;
+          case 'y':
+            // Custom YouTube action
+            console.log('Y key pressed');
+            break;
+        }
+      }
+    };
+
+    // Function to safely focus the overlay with null checking
+    const focusYoutubeOverlay = () => {
+      if (youtubeOverlay.value) {
+        try {
+          youtubeOverlay.value.focus();
+        } catch (err) {
+          console.error('Error focusing YouTube overlay:', err);
+        }
+      }
+    };
+    
+    // Focus the overlay when a YouTube video is loaded - with additional null checking
+    watch([
+      () => currentChannel.value?.type, 
+      showIframe
+    ], async ([newType, showingIframe]) => {
+      if ((newType === 'youtube-live' || showingIframe)) {
+        // Wait for next tick to ensure the DOM is updated
+        await nextTick();
+        focusYoutubeOverlay();
+      }
+    });
+    
+    // Focus the overlay when iframe URL changes - with additional null checking
+    watch(iframeUrl, async (newUrl) => {
+      if (newUrl) {
+        // Wait a moment for the iframe to load
+        setTimeout(() => {
+          focusYoutubeOverlay();
+        }, 1000);
+      }
+    });
 
     const clearTimeouts = () => {
       if (loadingTimeout) {
@@ -189,6 +261,7 @@ export default {
     };
 
     const volumeIcon = computed(() => {
+      if (!volumeInfo.value) return 'bi-volume-up';
       const level = volumeInfo.value.level;
       if (level === 0) return 'bi-volume-mute';
       if (level < 30) return 'bi-volume-down';
@@ -848,70 +921,13 @@ export default {
       
       // Focus the overlay after showing the iframe
       setTimeout(() => {
-        if (youtubeOverlay.value) {
-          youtubeOverlay.value.focus();
-        }
+        focusYoutubeOverlay();
       }, 1000);
     };
 
-    // Handle keyboard events on the overlay
-    const handleKeyDown = (event) => {
-      console.log('Key pressed on overlay:', event.key);
+    watch(currentChannel, async (newChannel, oldChannel) => {
+      if (!newChannel) return;
       
-      // Prevent default behavior for certain keys
-      if (['c', 'r', 'l', 's', 'y'].includes(event.key.toLowerCase())) {
-        event.preventDefault();
-        
-        // Handle specific keys
-        switch(event.key.toLowerCase()) {
-          case 'c':
-            // Channel list toggle
-            console.log('Toggle channel list');
-            event.target.blur();
-            store.toggleChannelListVisible();
-            break;
-          case 'r':
-            // Remote toggle
-            console.log('Toggle remote');
-            event.target.blur();
-            store.toggleRemoteVisible();
-            break;
-          case 'l':
-            // Toggle logs or another function
-            console.log('L key pressed');
-            break;
-          case 's':
-            // Settings or search
-            console.log('S key pressed');
-            break;
-          case 'y':
-            // Custom YouTube action
-            console.log('Y key pressed');
-            break;
-        }
-      }
-    };
-    
-    // Focus the overlay when a YouTube video is loaded
-    watch([() => currentChannel.value?.type, showIframe], async ([newType, showingIframe]) => {
-      if ((newType === 'youtube-live' || showingIframe) && youtubeOverlay.value) {
-        // Wait for next tick to ensure the DOM is updated
-        await nextTick();
-        youtubeOverlay.value.focus();
-      }
-    });
-    
-    // Focus the overlay when iframe URL changes
-    watch(iframeUrl, async (newUrl) => {
-      if (newUrl && youtubeOverlay.value) {
-        // Wait a moment for the iframe to load
-        setTimeout(() => {
-          youtubeOverlay.value.focus();
-        }, 1000);
-      }
-    });
-
-    watch(currentChannel, async (newChannel) => {
       if (newChannel?.url || newChannel?.stream_url) {
         error.value = null;
         isLoading.value = true;
@@ -927,7 +943,7 @@ export default {
         console.log('Loading channel:', newChannel.name, 'Type:', newChannel.type, 'URL:', streamUrl);
         
         // Handle YouTube content or embed URLs directly with iframe
-        if (newChannel.type === 'youtube-live' || streamUrl.includes('youtube.com/embed/')) {
+        if (newChannel.type === 'youtube-live' || (streamUrl && streamUrl.includes('youtube.com/embed/'))) {
           console.log('Using iframe for YouTube content');
           showIframePlayer(streamUrl);
           return;
@@ -946,9 +962,19 @@ export default {
       }
     });
 
-    watch(() => volumeInfo.value.level, (newLevel) => {
-      if (videoPlayer.value) {
+    watch(() => volumeInfo.value?.level, (newLevel) => {
+      if (videoPlayer.value && newLevel !== undefined) {
         videoPlayer.value.volume = newLevel / 100;
+      }
+    });
+
+    onMounted(() => {
+      // Focus the overlay if YouTube is already playing
+      if ((currentChannel.value?.type === 'youtube-live' || showIframe.value)) {
+        // Use setTimeout to ensure DOM is fully rendered
+        setTimeout(() => {
+          focusYoutubeOverlay();
+        }, 100);
       }
     });
 
@@ -973,13 +999,6 @@ export default {
       }
     });
 
-    onMounted(() => {
-      // Focus the overlay if YouTube is already playing
-      if ((currentChannel.value?.type === 'youtube-live' || showIframe.value) && youtubeOverlay.value) {
-        youtubeOverlay.value.focus();
-      }
-    });
-
     return {
       videoPlayer,
       currentChannel,
@@ -1001,7 +1020,8 @@ export default {
       showIframe,
       volumeIcon,
       youtubeOverlay,
-      handleKeyDown
+      handleKeyDown,
+      focusYoutubeOverlay,
     };
   }
 };
