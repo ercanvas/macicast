@@ -258,7 +258,16 @@ export default {
 
     // Klavye kontrollerini dinle
     const handleKeyPress = (e) => {
-      if (isMobile.value) return // Disable keyboard shortcuts on mobile
+      if (isMobile.value) return; // Disable keyboard shortcuts on mobile
+      
+      // Skip if event target is the YouTube overlay
+      if (e.target.classList && 
+          e.target.classList.contains('absolute') && 
+          e.target.classList.contains('inset-0') && 
+          e.target.classList.contains('z-10')) {
+        console.log('Key event handled by YouTube overlay, skipping global handler');
+        return;
+      }
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -279,7 +288,7 @@ export default {
         showRemote.value = !showRemote.value;
         showChannelList.value = false;
       } else if (e.key.toLowerCase() === 's') {
-        toggleStreamManager()
+        toggleStreamManager();
       } else if (e.key.toLowerCase() === 'y') {
         showYouTubeConverter.value = true;
       } else if (e.key.toLowerCase() === 'l') {

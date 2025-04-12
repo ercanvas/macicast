@@ -19,9 +19,12 @@
         @keydown="handleKeyDown"
         tabindex="0"
         ref="youtubeOverlay"
+        autofocus
         @mousedown.prevent
         @touchstart.prevent
         @click.prevent
+        @focus="console.log('YouTube overlay focused')"
+        @blur="console.log('YouTube overlay blur')"
       >
         <!-- Optional: Small indicator that the overlay is active -->
         <div class="absolute top-4 right-4 bg-black/30 text-white text-xs px-2 py-1 rounded">
@@ -156,6 +159,9 @@ export default {
     // Handle keyboard events on the overlay
     const handleKeyDown = (event) => {
       console.log('Key pressed on overlay:', event.key);
+      
+      // Stop propagation to prevent the global handler from also handling this event
+      event.stopPropagation();
       
       // Prevent default behavior for certain keys
       if (['c', 'r', 'l', 's', 'y'].includes(event.key.toLowerCase())) {
