@@ -15,6 +15,7 @@ const path = require('path');
 const fs = require('fs');          // Regular fs for sync operations
 const fsPromises = require('fs').promises;  // Promise-based fs operations
 const os = require('os');
+const youtubeUtils = require('./utils/youtube');
 
 // Load environment variables first
 dotenv.config();
@@ -50,12 +51,18 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const mongoUrl = process.env.MONGO_PUBLIC_URL || process.env.MONGO_URL;
 
 // Connect to MongoDB with updated configuration
-mongoose.connect(mongoUrl)
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch(err => {
-        console.error('❌ MongoDB connection error:', err);
-        process.exit(1); // Exit if cannot connect to database
-    });
+mongoose.connect(mongoUrl, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 30000, // Timeout after 30 seconds
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    family: 4 // Use IPv4, skip trying IPv6
+})
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1); // Exit if cannot connect to database
+});
 
 // Add MongoDB connection error handler
 mongoose.connection.on('error', (err) => {
@@ -79,6 +86,34 @@ process.on('SIGINT', async () => {
     }
 });
 
+// Function to ensure initial data exists
+const ensureInitialData = async () => {
+    try {
+        // Check if we have any channels
+        const channelCount = await Channel.countDocuments();
+        if (channelCount === 0) {
+            console.log('No channels found, seeding initial data...');
+            try {
+                // Try to load and run seed file
+                const initialChannels = require('./seeds/initial_channels');
+                await initialChannels.seed();
+                console.log('✅ Database seeded successfully');
+            } catch (err) {
+                console.error('Error seeding database:', err);
+            }
+        } else {
+            console.log(`Database has ${channelCount} channels`);
+        }
+    } catch (err) {
+        console.error('Error checking initial data:', err);
+    }
+};
+
+// Run after MongoDB connection is established
+mongoose.connection.once('connected', () => {
+    ensureInitialData();
+});
+
 const app = express();
 
 const corsOptions = {
@@ -96,6 +131,20 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add CORS headers directly to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://macicast.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Ensure required directories exist
 const ensureDirectories = () => {
@@ -322,7 +371,7 @@ async function processNextVideo(streamId) {
         await stream.save();
 
         if (process.env.STREAM_PROVIDER === 'mux') {
-            if (!Video || !Video.Assets) {
+            if (!Video) {
                 throw new Error('Mux Video client not available');
             }
             
@@ -333,7 +382,7 @@ async function processNextVideo(streamId) {
 
             try {
                 // Create Mux Asset using public URL
-                const asset = await Video.Assets.create({
+                const asset = await Video.assets.create({
                     input: publicUrl,
                     playback_policy: ['public']
                 });
@@ -490,6 +539,38 @@ app.post('/api/stream/:streamId/user', async (req, res) => {
     }
 });
 
+// Update add stream endpoint
+app.post('/api/stream/:streamId/streams', async (req, res) => {
+    try {
+        const { id, name, url, type = 'user-stream' } = req.body;
+        const stream = await Stream.findById(req.params.streamId);
+        
+        if (!stream) {
+            return res.status(404).json({ error: 'Stream not found' });
+        }
+
+        await stream.addUserStream({
+            id: id || Date.now().toString(),
+            name,
+            url,
+            type,
+            status: 'active'
+        });
+        
+        res.json({
+            id: stream._id,
+            name: stream.name,
+            status: stream.status,
+            type: 'channel',
+            playbackUrl: stream.playbackUrl,
+            userStreams: stream.userStreams
+        });
+    } catch (error) {
+        console.error('Error adding stream:', error);
+        res.status(500).json({ error: 'Failed to add stream' });
+    }
+});
+
 // Serve static files
 app.use('/streams', express.static(path.join(__dirname, 'public', 'streams')));
 app.use('/temp-streams', express.static(path.join(__dirname, 'public', 'temp-streams')));
@@ -521,6 +602,198 @@ app.get('/api/mux/test', async (req, res) => {
     }
 });
 
+// Add YouTube search endpoint
+app.get('/api/youtube/search', async (req, res) => {
+  try {
+    const { query, videoCount } = req.query;
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+    
+    const count = parseInt(videoCount) || 10;
+    
+    const channelData = await youtubeUtils.getChannelVideos(query, count);
+    res.json(channelData);
+  } catch (error) {
+    console.error('YouTube search error:', error);
+    res.status(500).json({ 
+      error: 'Failed to search YouTube',
+      details: error.message 
+    });
+  }
+});
+
+// Create YouTube HLS channel
+app.post('/api/youtube/channel', async (req, res) => {
+  try {
+    const { channelName, videoCount } = req.body;
+    
+    if (!channelName) {
+      return res.status(400).json({ error: 'Channel name is required' });
+    }
+    
+    const count = parseInt(videoCount) || 10;
+    
+    // First create the stream entry
+    const stream = await youtubeUtils.createYouTubeChannelStream(channelName, count);
+    
+    // Then create a channel entry
+    const lastChannel = await Channel.findOne().sort('-channel_number');
+    const nextChannelNumber = lastChannel ? lastChannel.channel_number + 1 : 1;
+    
+    const channel = new Channel({
+      name: `YouTube: ${stream.youtubeData.channelTitle}`,
+      channel_number: nextChannelNumber,
+      stream_url: `/api/youtube/stream/${stream._id}/playlist.m3u8`,
+      logo_url: stream.thumbnail,
+      category: 'YouTube',
+      is_active: true,
+      is_hls: true,
+      youtube_stream_id: stream._id
+    });
+    
+    await channel.save();
+    
+    // Start processing YouTube videos in the background
+    processYouTubeVideos(stream._id);
+    
+    res.json({
+      message: 'YouTube channel created successfully',
+      stream: {
+        id: stream._id,
+        name: stream.name,
+        status: stream.status,
+        videoCount: stream.videos.length
+      },
+      channel: {
+        id: channel._id,
+        name: channel.name,
+        number: channel.channel_number
+      }
+    });
+  } catch (error) {
+    console.error('YouTube channel creation error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create YouTube channel',
+      details: error.message 
+    });
+  }
+});
+
+// Process YouTube videos in the background
+async function processYouTubeVideos(streamId) {
+  try {
+    const stream = await Stream.findById(streamId);
+    if (!stream || stream.status === 'stopped') return;
+    
+    stream.status = 'processing';
+    await stream.save();
+    
+    const streamDir = path.join(__dirname, 'public', 'youtube-streams', streamId.toString());
+    if (!fs.existsSync(streamDir)) {
+      fs.mkdirSync(streamDir, { recursive: true });
+    }
+    
+    // Process each video
+    for (const video of stream.videos) {
+      if (!video.youtubeId) continue;
+      
+      try {
+        video.status = 'processing';
+        await stream.save();
+        
+        // Download and convert to HLS
+        const result = await youtubeUtils.downloadVideo(video.youtubeId, streamDir);
+        
+        // Update video status
+        video.status = 'ready';
+        video.path = result.hlsPath;
+        await stream.save();
+      } catch (error) {
+        console.error(`Error processing YouTube video ${video.youtubeId}:`, error);
+        video.status = 'error';
+        video.error = error.message;
+        await stream.save();
+      }
+    }
+    
+    // Update stream status
+    stream.status = 'active';
+    stream.playbackUrl = `/api/youtube/stream/${streamId}/playlist.m3u8`;
+    await stream.save();
+    
+    console.log(`Completed processing YouTube channel: ${stream.name}`);
+  } catch (error) {
+    console.error('Error processing YouTube videos:', error);
+  }
+}
+
+// Serve YouTube HLS stream
+app.get('/api/youtube/stream/:streamId/playlist.m3u8', async (req, res) => {
+  try {
+    const stream = await Stream.findById(req.params.streamId);
+    
+    if (!stream) {
+      return res.status(404).json({ error: 'Stream not found' });
+    }
+    
+    if (stream.status !== 'active' || !stream.videos || stream.videos.length === 0) {
+      return res.status(404).json({ error: 'Stream not ready' });
+    }
+    
+    // Find ready videos
+    const readyVideos = stream.videos.filter(v => v.status === 'ready');
+    if (readyVideos.length === 0) {
+      return res.status(404).json({ error: 'No videos ready to play' });
+    }
+    
+    // Get a video (either random or sequential based on shuffle setting)
+    const video = stream.getNextYouTubeVideo();
+    await stream.save();
+    
+    if (!video || !video.path) {
+      return res.status(404).json({ error: 'No video available' });
+    }
+    
+    // Redirect to the video's HLS playlist
+    res.redirect(video.path.replace(__dirname, ''));
+  } catch (error) {
+    console.error('Error serving YouTube stream:', error);
+    res.status(500).json({ error: 'Failed to serve stream' });
+  }
+});
+
+// Get YouTube stream info
+app.get('/api/youtube/stream/:streamId', async (req, res) => {
+  try {
+    const stream = await Stream.findById(req.params.streamId);
+    
+    if (!stream) {
+      return res.status(404).json({ error: 'Stream not found' });
+    }
+    
+    const readyCount = stream.videos.filter(v => v.status === 'ready').length;
+    const processingCount = stream.videos.filter(v => v.status === 'processing').length;
+    const errorCount = stream.videos.filter(v => v.status === 'error').length;
+    
+    res.json({
+      id: stream._id,
+      name: stream.name,
+      status: stream.status,
+      videoCount: stream.videos.length,
+      readyCount,
+      processingCount,
+      errorCount,
+      youtubeData: stream.youtubeData,
+      thumbnail: stream.thumbnail,
+      playbackUrl: stream.playbackUrl
+    });
+  } catch (error) {
+    console.error('Error fetching YouTube stream:', error);
+    res.status(500).json({ error: 'Failed to fetch stream info' });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -528,6 +801,37 @@ app.use((err, req, res, next) => {
         message: 'Something went wrong!',
         error: process.env.NODE_ENV === 'development' ? err.message : {}
     });
+});
+
+// Add diagnostic endpoint
+app.get('/api/status', async (req, res) => {
+    try {
+        // Check MongoDB connection
+        const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+        
+        // Basic system info
+        const systemInfo = {
+            platform: os.platform(),
+            arch: os.arch(),
+            memory: {
+                total: Math.round(os.totalmem() / (1024 * 1024)) + 'MB',
+                free: Math.round(os.freemem() / (1024 * 1024)) + 'MB'
+            }
+        };
+
+        res.json({
+            status: 'ok',
+            environment: process.env.NODE_ENV || 'development',
+            mongodb: mongoStatus,
+            system: systemInfo,
+            time: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'error',
+            error: error.message
+        });
+    }
 });
 
 const PORT = process.env.PORT || 3000;

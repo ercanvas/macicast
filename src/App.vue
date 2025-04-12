@@ -126,6 +126,24 @@
           <ManageStream @close="showStreamManager = false" />
         </div>
       </Transition>
+
+      <div class="sidebar-container" :class="{ 'sidebar-open': sidebarOpen }">
+        <TheSidebar @close="toggleSidebar" />
+      </div>
+
+      <!-- Add Channel Modal -->
+      <div v-if="showAddChannel" class="modal-backdrop">
+        <div class="modal-content">
+          <AddChannel @close="showAddChannel = false" />
+        </div>
+      </div>
+
+      <!-- YouTube to HLS Modal -->
+      <div v-if="showYouTubeConverter" class="modal-backdrop">
+        <div class="modal-content">
+          <YouTubeToHLS @close="showYouTubeConverter = false" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -137,6 +155,9 @@ import TVScreen from './components/TVScreen.vue'
 import ChannelList from './components/ChannelList.vue'
 import RemoteControl from './components/RemoteControl.vue'
 import ManageStream from './components/ManageStream.vue'
+import TheSidebar from './components/TheSidebar.vue'
+import AddChannel from './components/AddChannel.vue'
+import YouTubeToHLS from './components/YouTubeToHLS.vue'
 
 export default {
   name: 'App',
@@ -144,7 +165,10 @@ export default {
     TVScreen,
     ChannelList,
     RemoteControl,
-    ManageStream
+    ManageStream,
+    TheSidebar,
+    AddChannel,
+    YouTubeToHLS
   },
   setup() {
     const store = useChannelStore()
@@ -154,6 +178,9 @@ export default {
     const isMobilePortrait = ref(false)
     const isMobile = ref(false)
     const showStreamManager = ref(false)
+    const sidebarOpen = ref(false)
+    const showAddChannel = ref(false)
+    const showYouTubeConverter = ref(false)
     let channelInfoTimeout = null
 
     const volumeIcon = computed(() => {
@@ -245,6 +272,8 @@ export default {
         showChannelList.value = false;
       } else if (e.key.toLowerCase() === 's') {
         toggleStreamManager()
+      } else if (e.key.toLowerCase() === 'y' || e.key.toLowerCase() === 'Y') {
+        showYouTubeConverter.value = true;
       }
     };
 
@@ -285,6 +314,10 @@ export default {
       showRemote.value = false
     }
 
+    const toggleSidebar = () => {
+      sidebarOpen.value = !sidebarOpen.value
+    }
+
     return {
       showChannelList,
       showRemote,
@@ -298,7 +331,11 @@ export default {
       volumeInfo: computed(() => store.volumeInfo),
       isMobile,
       showStreamManager,
-      toggleStreamManager
+      toggleStreamManager,
+      sidebarOpen,
+      toggleSidebar,
+      showAddChannel,
+      showYouTubeConverter
     }
   }
 }
@@ -314,5 +351,33 @@ body {
 
 .font-serif {
   font-family: 'DM Serif Text', serif;
+}
+
+.modal-backdrop {
+  @apply fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-sm z-50;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  @apply w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 rounded-lg shadow-xl;
+  animation: scaleIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.sidebar-container {
+  @apply fixed top-0 left-0 h-full w-0 bg-gray-900/90 backdrop-blur-md transition-all duration-300 overflow-hidden z-50;
+}
+
+.sidebar-open {
+  @apply w-[300px] shadow-2xl;
 }
 </style>
