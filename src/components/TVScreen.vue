@@ -155,6 +155,8 @@ export default {
     const manifestLoadRetryCount = ref(0);
     const showIframe = ref(false);
     const youtubeOverlay = ref(null);
+    const appTitle = ref('Macicast');
+    const defaultTitle = 'Macicast';
 
     // Handle keyboard events on the overlay
     const handleKeyDown = (event) => {
@@ -966,6 +968,47 @@ export default {
       }
     });
 
+    // Function to update document title based on channel and playback state
+    const updateDocumentTitle = () => {
+      if (error.value || !currentChannel.value) {
+        document.title = defaultTitle;
+        return;
+      }
+      
+      const channelName = currentChannel.value.name || 'Unknown Channel';
+      const playbackStatus = isPlaying.value ? 'Now Playing' : 'Paused';
+      
+      if (isLoading.value) {
+        document.title = `${channelName} — ${defaultTitle} (Loading...)`;
+      } else {
+        document.title = `${channelName} — ${defaultTitle} (${playbackStatus})`;
+      }
+    };
+
+    // Update title when channel changes
+    watch(currentChannel, () => {
+      updateDocumentTitle();
+    });
+
+    // Update title when playing state changes
+    watch(isPlaying, () => {
+      updateDocumentTitle();
+    });
+
+    // Update title when loading state changes
+    watch(isLoading, () => {
+      updateDocumentTitle();
+    });
+
+    // Update title when error state changes
+    watch(error, () => {
+      if (error.value) {
+        document.title = defaultTitle;
+      } else {
+        updateDocumentTitle();
+      }
+    });
+
     watch(currentChannel, async (newChannel, oldChannel) => {
       if (!newChannel) return;
       
@@ -1017,6 +1060,9 @@ export default {
           focusYoutubeOverlay();
         }, 100);
       }
+      
+      // Set initial title
+      updateDocumentTitle();
     });
 
     onUnmounted(() => {
@@ -1038,6 +1084,9 @@ export default {
       if (playAttemptTimeout) {
         clearTimeout(playAttemptTimeout);
       }
+      
+      // Reset document title to default when component unmounts
+      document.title = defaultTitle;
     });
 
     return {
@@ -1064,6 +1113,7 @@ export default {
       handleKeyDown,
       focusYoutubeOverlay,
       updateFavicon,
+      updateDocumentTitle,
     };
   }
 };
