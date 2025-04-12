@@ -1,5 +1,10 @@
 <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <!-- Bigger ice cream shape centered more visually -->
+  <!-- Big black circle (ice cream scoop) -->
   <circle cx="128" cy="80" r="50" fill="black" />
+
+  <!-- Black triangle (cone) -->
   <polygon points="88,130 168,130 128,220" fill="black" />
+
+  <!-- Red circle at bottom right of the ice cream -->
+  <circle cx="180" cy="200" r="20" fill="red" />
 </svg>
