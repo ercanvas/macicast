@@ -931,6 +931,41 @@ export default {
       }, 1000);
     };
 
+    // Function to update favicon based on stream status
+    const updateFavicon = (isStreamWorking) => {
+      const favicon = document.querySelector('link[rel="icon"]');
+      if (!favicon) {
+        // Create favicon link if it doesn't exist
+        const newFavicon = document.createElement('link');
+        newFavicon.rel = 'icon';
+        newFavicon.type = 'image/svg+xml';
+        newFavicon.href = isStreamWorking ? '/onair.svg' : '/offair.svg';
+        document.head.appendChild(newFavicon);
+      } else {
+        // Update existing favicon
+        favicon.href = isStreamWorking ? '/onair.svg' : '/offair.svg';
+      }
+    };
+
+    // Update favicon based on error state
+    watch(error, (newError) => {
+      updateFavicon(!newError);
+    });
+
+    // Update favicon based on loading state (completed loading = working stream)
+    watch(isLoading, (stillLoading) => {
+      if (!error.value) {
+        updateFavicon(!stillLoading);
+      }
+    });
+
+    // Update favicon when playing status changes
+    watch(isPlaying, (playing) => {
+      if (!error.value) {
+        updateFavicon(playing);
+      }
+    });
+
     watch(currentChannel, async (newChannel, oldChannel) => {
       if (!newChannel) return;
       
@@ -1028,6 +1063,7 @@ export default {
       youtubeOverlay,
       handleKeyDown,
       focusYoutubeOverlay,
+      updateFavicon,
     };
   }
 };

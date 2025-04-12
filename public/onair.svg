@@ -10,4 +10,7 @@
 
   <!-- Right long radio wave -->
   <path d="M228 80 A100 100 0 0 0 128 -20" stroke="black" fill="none" stroke-width="6"/>
+
+  <!-- Green circle at bottom right -->
+  <circle cx="210" cy="210" r="20" fill="green" />
 </svg>
