@@ -9,8 +9,11 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/(.*)", "destination": "https://macicast-backend.onrender.com/api/$1" },
+    { "source": "/(.*)", "destination": "/$1" }
   ],
-  "buildCommand": "vite build",
-  "installCommand": "npm install"
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "outputDirectory": "dist",
+  "framework": "vite"
 }
