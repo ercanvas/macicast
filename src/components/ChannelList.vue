@@ -161,6 +161,7 @@ export default {
     const channels = ref([]);
     const loading = ref(true);
     const error = ref(null);
+    const isResetting = ref(false);
 
     const fetchChannels = async () => {
       try {
@@ -267,6 +268,38 @@ export default {
       fetchChannels();
     };
 
+    const resetChannels = async () => {
+      try {
+        isResetting.value = true;
+        error.value = null;
+        
+        // Call the reset endpoint on the server
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
+        const response = await axios.get(`${apiBaseUrl}/channels/reset`);
+        
+        // Update local channels list with the reset data
+        if (response.data.success) {
+          channels.value = response.data.channels;
+          
+          // Also update the store with the reset channels
+          store.setChannels(response.data.channels);
+          
+          // If user has a channel selected that's no longer in the list, reset to first channel
+          if (currentChannel.value) {
+            const stillExists = channels.value.some(ch => ch._id === currentChannel.value._id);
+            if (!stillExists && channels.value.length > 0) {
+              store.setCurrentChannel(channels.value[0]);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error resetting channels:', err);
+        error.value = 'Kanal listesi sıfırlanırken bir hata oluştu. Lütfen tekrar deneyin.';
+      } finally {
+        isResetting.value = false;
+      }
+    };
+
     return {
       searchQuery,
       selectedCategory,
@@ -282,7 +315,9 @@ export default {
       loading,
       error,
       store,
-      handleYoutubeLivesClose
+      handleYoutubeLivesClose,
+      resetChannels,
+      isResetting
     };
   }
 };

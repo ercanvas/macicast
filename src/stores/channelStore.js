@@ -229,6 +229,25 @@ export const useChannelStore = defineStore('channel', {
       
       // Return the channel for convenience
       return channel;
+    },
+    
+    // Replace the entire channels list
+    setChannels(channelsList) {
+      this.channels = channelsList;
+      
+      // If current channel is no longer in the list, reset to the first channel
+      if (this.currentChannel) {
+        const stillExists = this.channels.some(ch => 
+          ch._id === this.currentChannel._id || ch.id === this.currentChannel.id
+        );
+        
+        if (!stillExists && this.channels.length > 0) {
+          this.currentChannel = this.channels[0];
+        }
+      } else if (this.channels.length > 0) {
+        // Set first channel as current if none is selected
+        this.currentChannel = this.channels[0];
+      }
     }
   }
 });
