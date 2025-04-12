@@ -28,7 +28,7 @@
       >
         <!-- Optional: Small indicator that the overlay is active -->
         <div class="absolute top-4 right-4 bg-black/30 text-white text-xs px-2 py-1 rounded">
-          Kontrol Aktif
+          Control Active
         </div>
       </div>
     </div>
@@ -127,12 +127,10 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useChannelStore } from '../stores/channelStore';
 import { storeToRefs } from 'pinia';
 import Hls from 'hls.js';
-import { useI18n } from 'vue-i18n';
 
 export default {
   emits: ['toggle-remote', 'toggle-channels'],
   setup(props, { emit }) {
-    const { t } = useI18n();
     const store = useChannelStore();
     const { currentChannel, volumeInfo } = storeToRefs(store);
     const videoPlayer = ref(null);
@@ -158,7 +156,44 @@ export default {
     const showIframe = ref(false);
     const youtubeOverlay = ref(null);
     const appTitle = ref('Macicast');
-    const getDefaultTitle = () => `Macicast — ${t('app.tagline')}`;
+    
+    // Define status texts directly for all languages
+    const translations = {
+      en: {
+        defaultTitle: 'Macicast — Watch what next brings',
+        nowPlaying: 'Now Playing',
+        paused: 'Paused',
+        loading: 'Loading...'
+      },
+      tr: {
+        defaultTitle: 'Macicast — Bundan sonra ne olacağını izleyin',
+        nowPlaying: 'Şimdi Oynatılıyor',
+        paused: 'Duraklatıldı',
+        loading: 'Yükleniyor...'
+      },
+      ru: {
+        defaultTitle: 'Macicast — Смотрите что будет дальше',
+        nowPlaying: 'Сейчас Воспроизводится',
+        paused: 'Приостановлено',
+        loading: 'Загрузка...'
+      },
+      ar: {
+        defaultTitle: 'Macicast — شاهد ما سيأتي بعد ذلك',
+        nowPlaying: 'يتم التشغيل الآن',
+        paused: 'متوقف مؤقتًا',
+        loading: 'جاري التحميل...'
+      }
+    };
+    
+    // Get user's language or default to English
+    const userLang = navigator.language.split('-')[0];
+    const langKey = ['en', 'tr', 'ru', 'ar'].includes(userLang) ? userLang : 'en';
+    
+    // Use the selected language texts as reactive references
+    const defaultTitle = ref(translations[langKey].defaultTitle);
+    const nowPlayingText = ref(translations[langKey].nowPlaying);
+    const pausedText = ref(translations[langKey].paused);
+    const loadingText = ref(translations[langKey].loading);
 
     // Handle keyboard events on the overlay
     const handleKeyDown = (event) => {
@@ -973,15 +1008,15 @@ export default {
     // Function to update document title based on channel and playback state
     const updateDocumentTitle = () => {
       if (error.value || !currentChannel.value) {
-        document.title = getDefaultTitle();
+        document.title = defaultTitle.value;
         return;
       }
       
       const channelName = currentChannel.value.name || 'Unknown Channel';
-      const playbackStatus = isPlaying.value ? t('app.nowPlaying') : t('app.paused');
+      const playbackStatus = isPlaying.value ? nowPlayingText.value : pausedText.value;
       
       if (isLoading.value) {
-        document.title = `${channelName} — ${appTitle.value} (${t('app.loading')})`;
+        document.title = `${channelName} — ${appTitle.value} (${loadingText.value})`;
       } else {
         document.title = `${channelName} — ${appTitle.value} (${playbackStatus})`;
       }
@@ -1005,7 +1040,7 @@ export default {
     // Update title when error state changes
     watch(error, () => {
       if (error.value) {
-        document.title = getDefaultTitle();
+        document.title = defaultTitle.value;
       } else {
         updateDocumentTitle();
       }
@@ -1054,6 +1089,22 @@ export default {
       }
     });
 
+    // Function to change language
+    const changeLanguage = (newLang) => {
+      if (['en', 'tr', 'ru', 'ar'].includes(newLang)) {
+        const lang = newLang;
+        
+        // Update the texts
+        defaultTitle.value = translations[lang].defaultTitle;
+        nowPlayingText.value = translations[lang].nowPlaying;
+        pausedText.value = translations[lang].paused;
+        loadingText.value = translations[lang].loading;
+        
+        // Update the document title
+        updateDocumentTitle();
+      }
+    };
+
     onMounted(() => {
       // Focus the overlay if YouTube is already playing
       if ((currentChannel.value?.type === 'youtube-live' || showIframe.value)) {
@@ -1088,7 +1139,7 @@ export default {
       }
       
       // Reset document title to default when component unmounts
-      document.title = getDefaultTitle();
+      document.title = defaultTitle.value;
     });
 
     return {
@@ -1116,6 +1167,7 @@ export default {
       focusYoutubeOverlay,
       updateFavicon,
       updateDocumentTitle,
+      changeLanguage,
     };
   }
 };
