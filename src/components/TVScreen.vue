@@ -1,7 +1,17 @@
 <template>
   <div class="relative h-full w-full bg-black">
-    <!-- Video Player -->
+    <!-- YouTube Live Embed -->
+    <iframe
+      v-if="currentChannel?.type === 'youtube-live'"
+      class="h-full w-full"
+      :src="currentChannel?.stream_url"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allowfullscreen
+    ></iframe>
+
+    <!-- Standard Video Player (remains unchanged) -->
     <video
+      v-else
       ref="videoPlayer"
       class="h-full w-full object-contain"
       autoplay
@@ -298,16 +308,157 @@ export default {
         });
 
         hls.on(Hls.Events.ERROR, (event, data) => {
+          console.log('HLS error:', data.type, data);
+          
           if (data.fatal) {
-            switch (data.type) {
+            switch(data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                handleNetworkError(data);
+                // If the error contains fallback URL information, use it
+                if (data.response && data.response.text) {
+                  try {
+                    const errorInfo = JSON.parse(data.response.text);
+                    if (errorInfo.fallbackUrl) {
+                      console.log('Using fallback URL:', errorInfo.fallbackUrl);
+                      hls.destroy();
+                      hls = new Hls({
+                        debug: false,
+                        enableWorker: true,
+                        lowLatencyMode: true,
+                        
+                        // Buffer yapılandırması
+                        maxBufferSize: 30 * 1000 * 1000, // 30MB
+                        maxBufferLength: 30, // 30 saniye
+                        maxMaxBufferLength: 60, // Maksimum 60 saniye
+                        backBufferLength: 30, // 30 saniye geriye buffer
+                        
+                        // Segment yükleme ayarları
+                        fragLoadingTimeOut: 20000,
+                        fragLoadingMaxRetry: 6,
+                        fragLoadingRetryDelay: 1000,
+                        fragLoadingMaxRetryTimeout: 64000,
+                        
+                        // Manifest yükleme ayarları
+                        manifestLoadingTimeOut: 20000,
+                        manifestLoadingMaxRetry: 6,
+                        manifestLoadingRetryDelay: 1000,
+                        
+                        // Level yükleme ayarları
+                        levelLoadingTimeOut: 20000,
+                        levelLoadingMaxRetry: 4,
+                        
+                        // Stall önleme
+                        stallDelayDuration: 1,
+                        highBufferWatchdogPeriod: 2,
+                        
+                        // ABR ayarları
+                        abrEwmaDefaultEstimate: 500000,
+                        abrEwmaFastLive: 3,
+                        abrEwmaSlowLive: 9,
+                        
+                        // Hata kurtarma
+                        maxStarvationDelay: 4,
+                        maxLoadingDelay: 4,
+                        xhrSetup: function(xhr, url) {
+                          // Try both HTTP and HTTPS
+                          xhr.addEventListener('error', function() {
+                            if (url.startsWith('https:')) {
+                              // If HTTPS fails, try HTTP
+                              const httpUrl = url.replace('https:', 'http:');
+                              xhr.open('GET', httpUrl, true);
+                            } else if (url.startsWith('http:')) {
+                              // If HTTP fails, try HTTPS
+                              const httpsUrl = url.replace('http:', 'https:');
+                              xhr.open('GET', httpsUrl, true);
+                            }
+                          });
+                        },
+                        enableWorker: true,
+                        maxLoadingRetry: 10, // Increase retry attempts
+                        manifestLoadingMaxRetry: 10,
+                        manifestLoadingRetryDelay: 500 // Retry every 500ms
+                      });
+                      hls.on(Hls.Events.ERROR, onHlsError);
+                      hls.loadSource(errorInfo.fallbackUrl);
+                      hls.attachMedia(videoPlayer.value);
+                      return; // Don't retry with original URL
+                    }
+                  } catch (e) {
+                    console.log('Error parsing response:', e);
+                  }
+                }
+                
+                console.log('Network error, trying to recover...');
+                hls.startLoad();
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                handleMediaError(data);
+                console.log('Media error, trying to recover...');
+                hls.recoverMediaError();
                 break;
               default:
-                handleFatalError(data);
+                // Try to use a default channel if everything fails
+                console.log('Fatal error, switching to default channel...');
+                hls.destroy();
+                // Use TRT 1 as fallback
+                hls = new Hls({
+                  debug: false,
+                  enableWorker: true,
+                  lowLatencyMode: true,
+                  
+                  // Buffer yapılandırması
+                  maxBufferSize: 30 * 1000 * 1000, // 30MB
+                  maxBufferLength: 30, // 30 saniye
+                  maxMaxBufferLength: 60, // Maksimum 60 saniye
+                  backBufferLength: 30, // 30 saniye geriye buffer
+                  
+                  // Segment yükleme ayarları
+                  fragLoadingTimeOut: 20000,
+                  fragLoadingMaxRetry: 6,
+                  fragLoadingRetryDelay: 1000,
+                  fragLoadingMaxRetryTimeout: 64000,
+                  
+                  // Manifest yükleme ayarları
+                  manifestLoadingTimeOut: 20000,
+                  manifestLoadingMaxRetry: 6,
+                  manifestLoadingRetryDelay: 1000,
+                  
+                  // Level yükleme ayarları
+                  levelLoadingTimeOut: 20000,
+                  levelLoadingMaxRetry: 4,
+                  
+                  // Stall önleme
+                  stallDelayDuration: 1,
+                  highBufferWatchdogPeriod: 2,
+                  
+                  // ABR ayarları
+                  abrEwmaDefaultEstimate: 500000,
+                  abrEwmaFastLive: 3,
+                  abrEwmaSlowLive: 9,
+                  
+                  // Hata kurtarma
+                  maxStarvationDelay: 4,
+                  maxLoadingDelay: 4,
+                  xhrSetup: function(xhr, url) {
+                    // Try both HTTP and HTTPS
+                    xhr.addEventListener('error', function() {
+                      if (url.startsWith('https:')) {
+                        // If HTTPS fails, try HTTP
+                        const httpUrl = url.replace('https:', 'http:');
+                        xhr.open('GET', httpUrl, true);
+                      } else if (url.startsWith('http:')) {
+                        // If HTTP fails, try HTTPS
+                        const httpsUrl = url.replace('http:', 'https:');
+                        xhr.open('GET', httpsUrl, true);
+                      }
+                    });
+                  },
+                  enableWorker: true,
+                  maxLoadingRetry: 10, // Increase retry attempts
+                  manifestLoadingMaxRetry: 10,
+                  manifestLoadingRetryDelay: 500 // Retry every 500ms
+                });
+                hls.on(Hls.Events.ERROR, onHlsError);
+                hls.loadSource('https://tv-trt1.medya.trt.com.tr/master.m3u8');
+                hls.attachMedia(videoPlayer.value);
                 break;
             }
           } else if (data.details === 'manifestLoadError') {
@@ -528,6 +679,26 @@ export default {
 
     const handleEnded = () => {
       isPlaying.value = false;
+    };
+
+    const onHlsError = (event, data) => {
+      console.log('HLS error:', event, data);
+      if (data.fatal) {
+        switch(data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            console.log('Network error in fallback stream, trying to recover...');
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            console.log('Media error in fallback stream, trying to recover...');
+            hls.recoverMediaError();
+            break;
+          default:
+            console.log('Fatal error in fallback stream, cannot recover');
+            hls.destroy();
+            break;
+        }
+      }
     };
 
     watch(currentChannel, async (newChannel) => {

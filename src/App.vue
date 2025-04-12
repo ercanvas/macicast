@@ -144,6 +144,13 @@
           <YouTubeToHLS @close="showYouTubeConverter = false" />
         </div>
       </div>
+
+      <!-- YouTube Lives Modal -->
+      <div v-if="showYoutubeLives" class="modal-backdrop">
+        <div class="modal-content">
+          <YouTubeLives @close="showYoutubeLives = false" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -158,6 +165,7 @@ import ManageStream from './components/ManageStream.vue'
 import TheSidebar from './components/TheSidebar.vue'
 import AddChannel from './components/AddChannel.vue'
 import YouTubeToHLS from './components/YouTubeToHLS.vue'
+import YouTubeLives from './components/YouTubeLives.vue'
 
 export default {
   name: 'App',
@@ -168,7 +176,8 @@ export default {
     ManageStream,
     TheSidebar,
     AddChannel,
-    YouTubeToHLS
+    YouTubeToHLS,
+    YouTubeLives
   },
   setup() {
     const store = useChannelStore()
@@ -181,6 +190,7 @@ export default {
     const sidebarOpen = ref(false)
     const showAddChannel = ref(false)
     const showYouTubeConverter = ref(false)
+    const showYoutubeLives = ref(false)
     let channelInfoTimeout = null
 
     // Check if device is mobile
@@ -265,8 +275,10 @@ export default {
         showChannelList.value = false;
       } else if (e.key.toLowerCase() === 's') {
         toggleStreamManager()
-      } else if (e.key.toLowerCase() === 'y' || e.key.toLowerCase() === 'Y') {
+      } else if (e.key.toLowerCase() === 'y') {
         showYouTubeConverter.value = true;
+      } else if (e.key.toLowerCase() === 'l') {
+        showYoutubeLives.value = true;
       }
     };
 
@@ -333,7 +345,8 @@ export default {
       sidebarOpen,
       toggleSidebar,
       showAddChannel,
-      showYouTubeConverter
+      showYouTubeConverter,
+      showYoutubeLives
     }
   }
 }

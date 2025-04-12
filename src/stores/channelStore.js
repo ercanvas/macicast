@@ -100,6 +100,24 @@ export const useChannelStore = defineStore('channel', {
 
     setVolumeInfo(info) {
       this.volumeInfo = info;
+    },
+
+    // Add new channel directly to the store
+    addChannel(channel) {
+      // Set a default ID if not provided
+      if (!channel.id) {
+        channel.id = 'custom-' + Date.now();
+      }
+      
+      this.channels.push(channel);
+      
+      // If there's no current channel, set this as current
+      if (!this.currentChannel) {
+        this.setCurrentChannel(channel);
+      }
+      
+      // Return the channel for convenience
+      return channel;
     }
   }
 });
