@@ -154,21 +154,21 @@ export default {
           ? Math.max(...channelStore.channels.map(ch => ch.channel_number || 0))
           : 0;
         
-        // Create a new channel with the YouTube live stream
+        // Create a new channel with the YouTube live stream as HLS
         const newChannel = {
           id: 'youtube-live-' + channel.id, // Ensure unique ID
           name: `${channel.channelTitle} - Live`,
           channel_number: lastChannelNumber + 1,
-          stream_url: `https://www.youtube.com/embed/${channel.id}?autoplay=1&mute=0&controls=1&rel=0`,
+          stream_url: `https://www.youtube.com/watch?v=${channel.id}`,
           logo_url: channel.thumbnail,
-          category: 'YouTube Live',
+          category: 'Lives', // Changed from 'YouTube Live' to 'Lives'
           is_active: true,
-          is_hls: false,
+          is_hls: true, // Changed from false to true
           youtube_live_id: channel.id,
-          type: 'youtube-live'
+          type: 'youtube-live-hls' // Changed type to indicate HLS format
         };
         
-        console.log('Adding YouTube Live channel to store:', newChannel);
+        console.log('Adding YouTube Live channel to store as HLS:', newChannel);
         
         // Add to local store
         channelStore.addChannel(newChannel);
@@ -203,7 +203,9 @@ export default {
     // Check the status of all YouTube live channels
     async checkLiveChannelsStatus() {
       const channelStore = useChannelStore();
-      const youtubeChannels = channelStore.channels.filter(channel => channel.type === 'youtube-live');
+      const youtubeChannels = channelStore.channels.filter(channel => 
+        channel.type === 'youtube-live' || channel.type === 'youtube-live-hls'
+      );
       
       if (youtubeChannels.length === 0) {
         // If no YouTube live channels, clear the interval

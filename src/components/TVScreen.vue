@@ -200,6 +200,70 @@ export default {
         hls = null;
       }
 
+      // Check if the URL is a YouTube Live HLS stream
+      if (currentChannel.value?.type === 'youtube-live-hls') {
+        console.log('Processing YouTube Live as HLS:', url);
+        
+        // For YouTube Live, we need to convert the watch URL to an HLS stream
+        // This would typically be handled by a backend service
+        // Here we'll use a public HLS extractor service or invidious instance
+        
+        const videoId = url.includes('watch?v=') 
+          ? url.split('watch?v=')[1].split('&')[0] 
+          : url.split('/').pop();
+          
+        // Use an invidious instance to get the HLS stream
+        const hlsUrl = `https://invidious.snopyta.org/api/v1/videos/${videoId}`;
+        
+        console.log('Fetching HLS stream data for YouTube video ID:', videoId);
+        
+        // Fetch the stream data
+        fetch(hlsUrl)
+          .then(response => response.json())
+          .then(data => {
+            // Find HLS format (usually format 95 or 96)
+            const hlsFormat = data.formatStreams.find(f => f.type.includes('hls'));
+            
+            if (hlsFormat && hlsFormat.url) {
+              console.log('Found HLS stream URL:', hlsFormat.url);
+              
+              // Now initialize HLS.js with this URL
+              const hlsInstance = new Hls({
+                debug: false,
+                enableWorker: true,
+                lowLatencyMode: true,
+                maxBufferSize: 30 * 1000 * 1000,
+                maxBufferLength: 30
+              });
+              
+              hlsInstance.attachMedia(videoElement);
+              hlsInstance.on(Hls.Events.MEDIA_ATTACHED, () => {
+                console.log('HLS attached to video element for YouTube Live');
+                hlsInstance.loadSource(hlsFormat.url);
+              });
+              
+              hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+                console.error('YouTube Live HLS error:', data);
+                if (data.fatal) {
+                  error.value = 'YouTube HLS yayın yüklenemedi. Tekrar deneyin.';
+                }
+              });
+              
+              hls = hlsInstance;
+            } else {
+              // Fallback - try to use the embedded player
+              console.error('No HLS format found for YouTube Live, falling back to iframe');
+              error.value = 'YouTube HLS akışı bulunamadı. Lütfen tekrar deneyin.';
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching YouTube HLS stream:', err);
+            error.value = 'YouTube yayın verileri alınamadı. Lütfen tekrar deneyin.';
+          });
+          
+        return;
+      }
+
       // Check if the URL is a user stream
       if (currentChannel.value?.type === 'user-stream') {
         console.log('Loading user stream:', url);
