@@ -149,15 +149,17 @@ export default {
       const channelStore = useChannelStore();
       
       try {
-        // Create a new channel with the YouTube live stream
-        const lastChannel = channelStore.channels.reduce((max, ch) => (
-          ch.channel_number > max ? ch.channel_number : max
-        ), 0);
+        // Find the highest channel number currently in use
+        const lastChannelNumber = channelStore.channels.length > 0 
+          ? Math.max(...channelStore.channels.map(ch => ch.channel_number || 0))
+          : 0;
         
+        // Create a new channel with the YouTube live stream
         const newChannel = {
+          id: 'youtube-live-' + channel.id, // Ensure unique ID
           name: `${channel.channelTitle} - Live`,
-          channel_number: lastChannel + 1,
-          stream_url: `https://www.youtube.com/embed/${channel.id}?autoplay=1&mute=0`,
+          channel_number: lastChannelNumber + 1,
+          stream_url: `https://www.youtube.com/embed/${channel.id}?autoplay=1&mute=0&controls=1&rel=0`,
           logo_url: channel.thumbnail,
           category: 'YouTube Live',
           is_active: true,
@@ -166,8 +168,13 @@ export default {
           type: 'youtube-live'
         };
         
+        console.log('Adding YouTube Live channel to store:', newChannel);
+        
         // Add to local store
         channelStore.addChannel(newChannel);
+        
+        // Set as current channel immediately
+        channelStore.setCurrentChannel(newChannel);
         
         // Start monitoring the live status of all YouTube Live channels
         this.startChannelMonitoring();

@@ -5,8 +5,11 @@
       v-if="currentChannel?.type === 'youtube-live'"
       class="h-full w-full"
       :src="currentChannel?.stream_url"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
       allowfullscreen
+      sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+      referrerpolicy="origin"
+      loading="eager"
     ></iframe>
 
     <!-- Standard Video Player (remains unchanged) -->
