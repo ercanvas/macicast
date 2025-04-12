@@ -24,7 +24,7 @@
     <div v-else class="relative h-screen">
       <!-- Video Player -->
       <div class="h-screen w-full">
-        <TVScreen />
+        <TVScreen ref="tvScreen" />
       </div>
 
       <!-- Kanal Bilgi Popup -->
@@ -195,6 +195,9 @@ export default {
     LanguageSelector
   },
   setup() {
+    // Reference to TVScreen component
+    const tvScreen = ref(null)
+    
     const store = useChannelStore()
     const languageStore = useLanguageStore()
     const showChannelList = ref(false)
@@ -353,6 +356,12 @@ export default {
 
     const selectLanguage = (langCode) => {
       languageStore.setLanguage(langCode);
+      
+      // Find TVScreen component reference and call its changeLanguage method
+      if (tvScreen.value && tvScreen.value.changeLanguage) {
+        tvScreen.value.changeLanguage(langCode);
+      }
+      
       showLanguageSelector.value = false;
     };
 
@@ -387,7 +396,8 @@ export default {
       showLanguageSelector,
       languageStore,
       selectLanguage,
-      $t
+      $t,
+      tvScreen
     }
   }
 }

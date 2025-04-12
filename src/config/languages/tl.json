@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Macicast TV",
+    "turnPhone": "Pakipihit ang Iyong Telepono",
+    "betterExperience": "Para sa mas magandang karanasan, pihitin ang iyong telepono sa landscape mode",
+    "loading": "Naglo-load ng channel...",
+    "loadingTimeout": "Nag-timeout ang pag-load",
+    "retry": "Subukan Muli",
+    "browserNotSupported": "Hindi suportado ng iyong browser ang pag-play ng video.",
+    "errorLoading": "Error sa pag-load ng stream. Pakisubukan muli.",
+    "activeControl": "Aktibo ang Kontrol",
+    "tagline": "Panoorin ang susunod na hatid",
+    "nowPlaying": "Nagpe-play Ngayon",
+    "paused": "Naka-pause",
+    "loading": "Naglo-load..."
+  },
+  "channels": {
+    "title": "Mga Channel",
+    "search": "Maghanap ng mga channel...",
+    "all": "Lahat",
+    "addChannel": "Magdagdag ng Channel",
+    "addYouTube": "Magdagdag ng YouTube Live",
+    "resetChannels": "I-reset ang mga Channel"
+  },
+  "remote": {
+    "title": "Remote",
+    "volume": "Lakas ng Tunog",
+    "channel": "Channel"
+  },
+  "languages": {
+    "title": "Mga Wika",
+    "english": "Ingles",
+    "turkish": "Turkish",
+    "russian": "Russian",
+    "arabic": "Arabic",
+    "tagalog": "Tagalog"
+  },
+  "errors": {
+    "streamNotAvailable": "Hindi available ang stream. Pakisubukan muli mamaya.",
+    "connectionFailed": "Nabigo ang koneksyon. Pakisubukan muli mamaya.",
+    "playbackError": "May naganap na error sa playback.",
+    "tryingAlternative": "Sinusubukan ang alternatibong mapagkukunan"
+  },
+  "channelList": {
+    "title": "Listahan ng Channel",
+    "liveStreams": "Mga Live Stream",
+    "searchPlaceholder": "Maghanap ng mga channel...",
+    "allChannels": "Lahat ng Channel"
+  },
+  "youtubeLives": {
+    "live": "LIVE",
+    "viewers": "mga manonood",
+    "addChannelTitle": "Magdagdag ng YouTube Channel"
+  }
+} 

@@ -182,12 +182,18 @@ export default {
         nowPlaying: 'يتم التشغيل الآن',
         paused: 'متوقف مؤقتًا',
         loading: 'جاري التحميل...'
+      },
+      tl: {
+        defaultTitle: 'Macicast — Panoorin ang susunod na hatid',
+        nowPlaying: 'Nagpe-play Ngayon',
+        paused: 'Naka-pause',
+        loading: 'Naglo-load...'
       }
     };
     
     // Get user's language or default to English
     const userLang = navigator.language.split('-')[0];
-    const langKey = ['en', 'tr', 'ru', 'ar'].includes(userLang) ? userLang : 'en';
+    const langKey = ['en', 'tr', 'ru', 'ar', 'tl'].includes(userLang) ? userLang : 'en';
     
     // Use the selected language texts as reactive references
     const defaultTitle = ref(translations[langKey].defaultTitle);
@@ -1091,7 +1097,7 @@ export default {
 
     // Function to change language
     const changeLanguage = (newLang) => {
-      if (['en', 'tr', 'ru', 'ar'].includes(newLang)) {
+      if (['en', 'tr', 'ru', 'ar', 'tl'].includes(newLang)) {
         const lang = newLang;
         
         // Update the texts

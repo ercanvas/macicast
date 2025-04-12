@@ -3,6 +3,7 @@ import enTranslations from '../config/languages/en.json';
 import trTranslations from '../config/languages/tr.json';
 import ruTranslations from '../config/languages/ru.json';
 import arTranslations from '../config/languages/ar.json';
+import tlTranslations from '../config/languages/tl.json';
 
 export const useLanguageStore = defineStore('language', {
   state: () => {
@@ -15,7 +16,8 @@ export const useLanguageStore = defineStore('language', {
         { code: 'en', name: 'English', translations: enTranslations, icon: '🇬🇧', direction: 'ltr' },
         { code: 'tr', name: 'Türkçe', translations: trTranslations, icon: '🇹🇷', direction: 'ltr' },
         { code: 'ru', name: 'Русский', translations: ruTranslations, icon: '🇷🇺', direction: 'ltr' },
-        { code: 'ar', name: 'العربية', translations: arTranslations, icon: '🇸🇦', direction: 'rtl' }
+        { code: 'ar', name: 'العربية', translations: arTranslations, icon: '🇸🇦', direction: 'rtl' },
+        { code: 'tl', name: 'Tagalog', translations: tlTranslations, icon: '🇵🇭', direction: 'ltr' }
       ]
     };
   },
