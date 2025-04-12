@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black circle (ice cream scoop) -->
+  <circle cx="40" cy="40" r="20" fill="black" />
+
+  <!-- Black triangle (cone), attached directly under the circle -->
+  <polygon points="30,60 50,60 40,100" fill="black" />
+</svg>
