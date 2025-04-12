@@ -25,7 +25,7 @@
           <input 
             v-model="loginForm.emailOrUsername" 
             type="text" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -34,7 +34,7 @@
           <input 
             v-model="loginForm.password" 
             type="password" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -68,7 +68,7 @@
             ref="fileInput"
             type="file"
             accept="image/*"
-            class="hidden"
+            class="hidden form-control"
             @change="handleImageUpload"
           />
           <p class="text-xs text-gray-400 mt-2">{{ $t('auth.clickToUpload') || 'Click to upload a profile picture' }}</p>
@@ -79,7 +79,7 @@
           <input 
             v-model="signupForm.username" 
             type="text" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
           <p class="text-xs text-gray-400 mt-1">{{ $t('auth.usernameRequirements') || 'Letters, numbers, and underscores only' }}</p>
@@ -89,7 +89,7 @@
           <input 
             v-model="signupForm.displayName" 
             type="text" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -98,7 +98,7 @@
           <input 
             v-model="signupForm.email" 
             type="email" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -107,7 +107,7 @@
           <input 
             v-model="signupForm.password" 
             type="password" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>
@@ -116,7 +116,7 @@
           <input 
             v-model="signupForm.confirmPassword" 
             type="password" 
-            class="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
+            class="form-control w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-primary"
             required
           />
         </div>

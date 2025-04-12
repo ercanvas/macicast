@@ -233,6 +233,9 @@ export default {
     const showAuth = ref(false)
     let channelInfoTimeout = null
 
+    // Add a ref to track if an input element has focus
+    const inputHasFocus = ref(false)
+
     // Check if device is mobile
     const checkDevice = () => {
       isMobile.value = window.innerWidth < 768 // or any breakpoint you prefer
@@ -291,9 +294,55 @@ export default {
       }, 2000);
     };
 
-    // Klavye kontrollerini dinle
+    // Add global focus and blur event listeners
+    const handleGlobalFocus = (e) => {
+      const target = e.target;
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable || 
+        target.getAttribute('role') === 'textbox' ||
+        target.classList.contains('form-control')
+      ) {
+        inputHasFocus.value = true;
+        console.log('Input element focused, keyboard shortcuts disabled');
+      }
+    };
+
+    const handleGlobalBlur = (e) => {
+      const target = e.target;
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable || 
+        target.getAttribute('role') === 'textbox' ||
+        target.classList.contains('form-control')
+      ) {
+        inputHasFocus.value = false;
+        console.log('Input element blurred, keyboard shortcuts enabled');
+      }
+    };
+
+    // Update handleKeyPress to check inputHasFocus
     const handleKeyPress = (e) => {
       if (isMobile.value) return; // Disable keyboard shortcuts on mobile
+      
+      // Skip if an input element has focus or if the event target is an input
+      if (
+        inputHasFocus.value ||
+        e.target.tagName === 'INPUT' || 
+        e.target.tagName === 'TEXTAREA' || 
+        e.target.isContentEditable || 
+        e.target.getAttribute('role') === 'textbox' ||
+        e.target.classList.contains('form-control') ||
+        e.target.closest('.form-control')
+      ) {
+        // Only log when not already blocked by inputHasFocus to reduce console spam
+        if (!inputHasFocus.value) {
+          console.log('User is typing in an input field, ignoring shortcut keys');
+        }
+        return;
+      }
       
       // Skip if event target is the YouTube overlay
       if (e.target.classList && 
@@ -303,7 +352,7 @@ export default {
         console.log('Key event handled by YouTube overlay, skipping global handler');
         return;
       }
-
+      
       if (e.key === 'ArrowUp') {
         e.preventDefault();
         changeChannel('up');
@@ -350,6 +399,8 @@ export default {
       await store.fetchChannels()
       window.addEventListener('keydown', handleKeyPress)
       window.addEventListener('resize', checkOrientation)
+      window.addEventListener('focus', handleGlobalFocus, true) // Capture phase
+      window.addEventListener('blur', handleGlobalBlur, true) // Capture phase
       checkOrientation()
       checkDevice()
       window.addEventListener('resize', checkDevice)
@@ -359,6 +410,8 @@ export default {
       window.removeEventListener('keydown', handleKeyPress)
       window.removeEventListener('resize', checkOrientation)
       window.removeEventListener('resize', checkDevice)
+      window.removeEventListener('focus', handleGlobalFocus, true)
+      window.removeEventListener('blur', handleGlobalBlur, true)
       clearTimeout(channelInfoTimeout)
     })
 
@@ -476,5 +529,14 @@ body {
 
 .sidebar-open {
   @apply w-[300px] shadow-2xl;
+}
+
+.form-control {
+  @apply bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:border-primary;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  @apply ring-2 ring-primary/25;
 }
 </style>
