@@ -204,30 +204,42 @@ export default {
       if (currentChannel.value?.type === 'youtube-live-hls') {
         console.log('Processing YouTube Live as HLS:', url);
         
-        // For YouTube Live, we need to convert the watch URL to an HLS stream
-        // This would typically be handled by a backend service
-        // Here we'll use a public HLS extractor service or invidious instance
-        
-        const videoId = url.includes('watch?v=') 
-          ? url.split('watch?v=')[1].split('&')[0] 
-          : url.split('/').pop();
-          
-        // Use an invidious instance to get the HLS stream
-        const hlsUrl = `https://invidious.snopyta.org/api/v1/videos/${videoId}`;
+        // Get the video ID - either directly from the URL or from the channel object
+        let videoId;
+        if (url.includes('watch?v=')) {
+          videoId = url.split('watch?v=')[1].split('&')[0];
+        } else if (url.includes('youtube.com/')) {
+          videoId = url.split('/').pop();
+        } else {
+          // In our updated implementation, we're storing just the video ID
+          videoId = url;
+        }
         
         console.log('Fetching HLS stream data for YouTube video ID:', videoId);
         
-        // Fetch the stream data
-        fetch(hlsUrl)
-          .then(response => response.json())
+        // Use our backend proxy endpoint instead of direct Invidious access
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
+        const proxyUrl = `${apiBaseUrl}/youtube/hls/${videoId}`;
+        
+        // Fetch the stream data through our proxy
+        fetch(proxyUrl)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Backend proxy returned status ${response.status}`);
+            }
+            return response.json();
+          })
           .then(data => {
-            // Find HLS format (usually format 95 or 96)
-            const hlsFormat = data.formatStreams.find(f => f.type.includes('hls'));
+            if (!data.success) {
+              throw new Error(data.message || 'Failed to fetch YouTube stream data');
+            }
             
-            if (hlsFormat && hlsFormat.url) {
-              console.log('Found HLS stream URL:', hlsFormat.url);
+            const streamUrl = data.hlsUrl || data.fallbackUrl;
+            
+            if (streamUrl) {
+              console.log('Found stream URL from backend proxy:', streamUrl);
               
-              // Now initialize HLS.js with this URL
+              // Initialize HLS.js with the URL from our proxy
               const hlsInstance = new Hls({
                 debug: false,
                 enableWorker: true,
@@ -239,7 +251,7 @@ export default {
               hlsInstance.attachMedia(videoElement);
               hlsInstance.on(Hls.Events.MEDIA_ATTACHED, () => {
                 console.log('HLS attached to video element for YouTube Live');
-                hlsInstance.loadSource(hlsFormat.url);
+                hlsInstance.loadSource(streamUrl);
               });
               
               hlsInstance.on(Hls.Events.ERROR, (event, data) => {
@@ -251,9 +263,9 @@ export default {
               
               hls = hlsInstance;
             } else {
-              // Fallback - try to use the embedded player
-              console.error('No HLS format found for YouTube Live, falling back to iframe');
-              error.value = 'YouTube HLS akışı bulunamadı. Lütfen tekrar deneyin.';
+              // If no stream URL is available, show an error
+              console.error('No stream URL found for YouTube Live');
+              error.value = 'YouTube yayını bulunamadı. Lütfen tekrar deneyin.';
             }
           })
           .catch(err => {

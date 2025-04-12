@@ -154,12 +154,16 @@ export default {
           ? Math.max(...channelStore.channels.map(ch => ch.channel_number || 0))
           : 0;
         
+        // Get the API base URL
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
+        
         // Create a new channel with the YouTube live stream as HLS
         const newChannel = {
           id: 'youtube-live-' + channel.id, // Ensure unique ID
           name: `${channel.channelTitle} - Live`,
           channel_number: lastChannelNumber + 1,
-          stream_url: `https://www.youtube.com/watch?v=${channel.id}`,
+          // The direct YouTube URL will now be processed by our backend proxy
+          stream_url: `${channel.id}`, // Just store the YouTube video ID
           logo_url: channel.thumbnail,
           category: 'Lives', // Changed from 'YouTube Live' to 'Lives'
           is_active: true,

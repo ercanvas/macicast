@@ -36,8 +36,18 @@ export const useChannelStore = defineStore('channel', {
     volumeInfo: {
       level: 50,
       show: false
-    }
+    },
+    liveMonitorActive: false
   }),
+  
+  getters: {
+    hasUserStreams: (state) => state.channels.some(channel => channel.type === 'user-stream'),
+    userStreams: (state) => state.channels.filter(channel => channel.type === 'user-stream'),
+    liveChannels: (state) => state.channels.filter(channel => 
+      channel.type === 'youtube-live-hls' || 
+      (channel.category === 'Lives' && channel.is_hls === true)
+    )
+  },
   
   actions: {
     async fetchChannels() {
@@ -79,6 +89,107 @@ export const useChannelStore = defineStore('channel', {
         }
       } finally {
         this.loading = false;
+      }
+
+      // Start monitoring live channels after fetching
+      this.startLiveMonitoring();
+    },
+
+    // Start monitoring YouTube live channels
+    startLiveMonitoring() {
+      // Only start if not already active
+      if (this.liveMonitorActive) return;
+      
+      // Check every 2 minutes
+      const checkInterval = 2 * 60 * 1000;
+      
+      // Set up interval
+      this.liveMonitorInterval = setInterval(() => {
+        this.checkLiveChannelsStatus();
+      }, checkInterval);
+      
+      this.liveMonitorActive = true;
+      console.log('Live channel monitoring started');
+    },
+    
+    // Stop monitoring when no longer needed
+    stopLiveMonitoring() {
+      if (this.liveMonitorInterval) {
+        clearInterval(this.liveMonitorInterval);
+        this.liveMonitorInterval = null;
+        this.liveMonitorActive = false;
+        console.log('Live channel monitoring stopped');
+      }
+    },
+    
+    // Check if YouTube live channels are still live
+    async checkLiveChannelsStatus() {
+      const youtubeChannels = this.channels.filter(channel => 
+        channel.type === 'youtube-live-hls' || 
+        channel.youtube_live_id
+      );
+      
+      if (youtubeChannels.length === 0) {
+        this.stopLiveMonitoring();
+        return;
+      }
+      
+      console.log(`Checking status of ${youtubeChannels.length} live channels...`);
+      
+      try {
+        // Get all YouTube live IDs
+        const videoIds = youtubeChannels
+          .map(channel => channel.youtube_live_id || channel.stream_url)
+          .filter(Boolean)
+          .join(',');
+        
+        if (!videoIds) return;
+        
+        // Use the YouTube API to check if videos are still live
+        const apiKey = import.meta.env.VITE_YOUTUBE_API_KEY;
+        if (!apiKey) {
+          console.warn('No YouTube API key found, skipping live check');
+          return;
+        }
+        
+        const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+          params: {
+            part: 'snippet,liveStreamingDetails',
+            id: videoIds,
+            key: apiKey
+          }
+        });
+        
+        // Get list of videos that are not live anymore
+        const returnedVideoIds = new Set(response.data.items.map(item => item.id));
+        const offlineChannels = youtubeChannels.filter(channel => {
+          const videoId = channel.youtube_live_id || channel.stream_url;
+          return !returnedVideoIds.has(videoId) || 
+            !response.data.items.find(item => 
+              item.id === videoId && 
+              item.snippet?.liveBroadcastContent === 'live'
+            );
+        });
+        
+        if (offlineChannels.length > 0) {
+          console.log(`Removing ${offlineChannels.length} channels that are no longer live`);
+          
+          // Remove offline channels
+          offlineChannels.forEach(channel => {
+            const index = this.channels.findIndex(c => c.id === channel.id);
+            if (index !== -1) {
+              console.log(`Removing channel that is no longer live: ${channel.name}`);
+              this.channels.splice(index, 1);
+              
+              // If current channel is removed, switch to another channel
+              if (this.currentChannel?.id === channel.id) {
+                this.currentChannel = this.channels.length > 0 ? this.channels[0] : null;
+              }
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error checking live channels status:', error);
       }
     },
 

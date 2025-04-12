@@ -132,7 +132,7 @@
 
   <!-- YouTube Lives Modal -->
   <YouTubeLives v-if="showYoutubeLives" 
-                @close="showYoutubeLives = false" />
+                @close="handleYoutubeLivesClose" />
 </template>
 
 <script>
@@ -164,8 +164,31 @@ export default {
 
     const fetchChannels = async () => {
       try {
+        loading.value = true;
         const response = await axios.get('https://macicast-backend.onrender.com/api/channels');
         channels.value = response.data;
+        
+        // Also merge any channels that might only exist in the store
+        const storeChannels = store.channels;
+        if (storeChannels.length > 0) {
+          // Use Map to deduplicate by ID
+          const channelMap = new Map();
+          
+          // Add existing channels to map
+          channels.value.forEach(channel => {
+            channelMap.set(channel.id, channel);
+          });
+          
+          // Add store-only channels to map
+          storeChannels.forEach(channel => {
+            if (!channelMap.has(channel.id)) {
+              channelMap.set(channel.id, channel);
+            }
+          });
+          
+          // Convert map back to array
+          channels.value = Array.from(channelMap.values());
+        }
       } catch (err) {
         console.error('Error fetching channels:', err);
         error.value = 'Kanal listesi yüklenirken bir hata oluştu.';
@@ -234,7 +257,14 @@ export default {
     };
 
     const handleChannelAdded = () => {
-      // Channel list will be automatically updated through Pinia store
+      // Refresh the channel list when a new channel is added
+      fetchChannels();
+    };
+
+    const handleYoutubeLivesClose = () => {
+      showYoutubeLives.value = false;
+      // Refresh the channel list to include any newly added YouTube Live channels
+      fetchChannels();
     };
 
     return {
@@ -251,7 +281,8 @@ export default {
       channels,
       loading,
       error,
-      store // Make sure store is returned
+      store,
+      handleYoutubeLivesClose
     };
   }
 };

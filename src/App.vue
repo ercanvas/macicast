@@ -106,9 +106,14 @@
                 class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
           <i class="bi bi-controller text-2xl"></i>
         </button>
+        <button @click="showYoutubeLives = true" 
+                class="w-14 h-14 rounded-full bg-red-500/80 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg"
+                title="Find live broadcasts">
+          <i class="bi bi-broadcast text-2xl"></i>
+        </button>
         <button @click="toggleStreamManager" 
                 class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
-          <i class="bi bi-broadcast text-2xl"></i>
+          <i class="bi bi-camera-video text-2xl"></i>
         </button>
       </div>
 
