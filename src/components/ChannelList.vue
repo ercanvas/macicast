@@ -7,14 +7,14 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="bi bi-tv text-primary text-xl"></i>
-            <h2 class="text-lg font-bold">Kanal Listesi</h2>
+            <h2 class="text-lg font-bold">{{ $t('channelList.title') }}</h2>
           </div>
           <div class="flex items-center gap-2">
             <button @click="showYoutubeLives = true" 
                     class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
                     title="Find live broadcasts">
               <i class="bi bi-broadcast"></i>
-              <span class="hidden sm:inline">Canlı Yayınlar</span>
+              <span class="hidden sm:inline">{{ $t('channelList.liveStreams') }}</span>
             </button>
             <button @click="showAddChannel = true" 
                     class="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center">
@@ -33,7 +33,7 @@
             <input 
               v-model="searchQuery"
               type="text"
-              placeholder="Kanal ara..."
+              :placeholder="$t('channelList.searchPlaceholder')"
               class="w-full bg-gray-800/50 rounded-xl px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             >
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -42,7 +42,7 @@
             v-model="selectedCategory"
             class="bg-gray-800/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">Tüm Kanallar</option>
+            <option value="">{{ $t('channelList.allChannels') }}</option>
             <option v-for="category in categories" :key="category" :value="category">
               {{ category }}
             </option>
@@ -58,8 +58,8 @@
                  class="text-sm text-gray-400 mb-2 pl-2 sticky top-0 bg-black/95 py-2 z-10 backdrop-blur flex items-center"
                  :class="{'text-red-500': category === 'Lives'}">
               <i v-if="category === 'Lives'" class="bi bi-broadcast mr-2 text-red-500"></i>
-              {{ category }}
-              <span v-if="category === 'Lives'" class="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">LIVE</span>
+              {{ category === 'Lives' ? $t('channelList.lives') : category }}
+              <span v-if="category === 'Lives'" class="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{{ $t('channelList.live') }}</span>
             </div>
             
             <div class="space-y-2">
@@ -84,7 +84,7 @@
 
                 <div class="flex-1 min-w-0">
                   <div class="font-medium truncate">{{ channel.name }}</div>
-                  <div class="text-xs text-gray-400">Kanal {{ channel.channel_number }}</div>
+                  <div class="text-xs text-gray-400">{{ $t('channelList.channel') }} {{ channel.channel_number }}</div>
                 </div>
 
                 <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -97,7 +97,7 @@
 
         <!-- User Streams Section -->
         <div v-if="store.hasUserStreams" class="mt-4">
-          <h3 class="text-lg font-bold mb-2">Kullanıcı Yayınları</h3>
+          <h3 class="text-lg font-bold mb-2">{{ $t('channelList.userStreams') }}</h3>
           <div class="space-y-2">
             <button
               v-for="stream in store.userStreams" 
@@ -112,7 +112,7 @@
 
               <div class="flex-1 min-w-0">
                 <div class="font-medium truncate">{{ stream.name }}</div>
-                <div class="text-xs text-primary">Canlı Yayın</div>
+                <div class="text-xs text-primary">{{ $t('channelList.liveStream') }}</div>
               </div>
 
               <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -138,6 +138,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useChannelStore } from '../stores/channelStore';
+import { useLanguageStore } from '../stores/languageStore';
 import { storeToRefs } from 'pinia';
 import AddChannel from './AddChannel.vue';
 import YouTubeLives from './YouTubeLives.vue';
@@ -153,6 +154,7 @@ export default {
   
   setup() {
     const store = useChannelStore();
+    const languageStore = useLanguageStore();
     const { currentChannel } = storeToRefs(store);
     const searchQuery = ref('');
     const selectedCategory = ref('');
@@ -300,6 +302,14 @@ export default {
       }
     };
 
+    const selectCategory = (category) => {
+      selectedCategory.value = category;
+    };
+
+    const $t = (key) => {
+      return languageStore.t(key);
+    };
+
     return {
       searchQuery,
       selectedCategory,
@@ -317,7 +327,9 @@ export default {
       store,
       handleYoutubeLivesClose,
       resetChannels,
-      isResetting
+      isResetting,
+      selectCategory,
+      $t
     };
   }
 };

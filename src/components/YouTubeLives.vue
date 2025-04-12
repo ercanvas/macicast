@@ -2,7 +2,7 @@
   <div class="youtube-lives">
     <div class="card bg-gray-900 border-gray-800 shadow-lg">
       <div class="card-header bg-gray-800 p-4 flex justify-between items-center">
-        <h2 class="text-xl font-bold text-white">YouTube Live Channels</h2>
+        <h2 class="text-xl font-bold text-white">{{ $t('youtubeLives.title') }}</h2>
         <button @click="closeModal" class="text-gray-400 hover:text-white">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -14,7 +14,7 @@
               v-model="searchQuery" 
               @keyup.enter="searchLiveChannels"
               class="w-full pl-10 pr-4 py-2 rounded bg-gray-700 text-white border border-gray-600 focus:outline-none focus:border-blue-500"
-              placeholder="Search for live channels..."
+              :placeholder="$t('youtubeLives.searchPlaceholder')"
             />
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <button 
@@ -36,33 +36,33 @@
           <div class="animate-spin text-primary text-4xl mb-4">
             <i class="bi bi-arrow-repeat"></i>
           </div>
-          <p class="text-gray-400">Searching for live channels...</p>
+          <p class="text-gray-400">{{ $t('youtubeLives.searching') }}</p>
         </div>
         
         <div v-else-if="liveChannels.length === 0 && searched" class="text-center py-8">
           <i class="bi bi-tv-off text-4xl text-gray-600 mb-4"></i>
-          <p class="text-gray-400">No live channels found</p>
+          <p class="text-gray-400">{{ $t('youtubeLives.noChannels') }}</p>
         </div>
         
         <div v-else-if="liveChannels.length > 0" class="divide-y divide-gray-700">
           <div v-for="channel in liveChannels" :key="channel.id" class="py-3 flex items-center">
             <div class="relative w-32 h-20 mr-3 overflow-hidden rounded">
               <img :src="channel.thumbnail" class="w-full h-full object-cover" alt="thumbnail" />
-              <div class="absolute bottom-1 right-1 bg-red-600 text-xs text-white px-1 rounded">LIVE</div>
+              <div class="absolute bottom-1 right-1 bg-red-600 text-xs text-white px-1 rounded">{{ $t('youtubeLives.live') }}</div>
             </div>
             <div class="flex-grow">
               <h3 class="font-medium text-white mb-1 line-clamp-2">{{ channel.title }}</h3>
               <p class="text-sm text-gray-400 mb-1">{{ channel.channelTitle }}</p>
               <div class="flex items-center text-xs text-gray-500">
                 <span v-if="channel.viewCount">
-                  <i class="bi bi-eye mr-1"></i>{{ formatNumber(channel.viewCount) }} viewers
+                  <i class="bi bi-eye mr-1"></i>{{ formatNumber(channel.viewCount) }} {{ $t('youtubeLives.viewers') }}
                 </span>
               </div>
             </div>
             <button 
               @click="addToChannels(channel)" 
               class="ml-2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none flex-shrink-0"
-              :title="'Add ' + channel.title + ' to channels'"
+              :title="$t('youtubeLives.addChannelTitle', { name: channel.title })"
             >
               <i class="bi bi-plus"></i>
             </button>
@@ -76,9 +76,29 @@
 <script>
 import axios from 'axios';
 import { useChannelStore } from '../stores/channelStore';
+import { useLanguageStore } from '../stores/languageStore';
 
 export default {
   name: 'YouTubeLives',
+  setup() {
+    const languageStore = useLanguageStore();
+    
+    const $t = (key, params = {}) => {
+      // Basic interpolation for params
+      let translation = languageStore.t(key);
+      
+      // Replace parameters in translation
+      Object.keys(params).forEach(param => {
+        translation = translation.replace(`{${param}}`, params[param]);
+      });
+      
+      return translation;
+    };
+    
+    return {
+      $t
+    };
+  },
   data() {
     return {
       searchQuery: '',
@@ -92,7 +112,7 @@ export default {
   methods: {
     async searchLiveChannels() {
       if (!this.searchQuery.trim()) {
-        this.error = 'Please enter a search query';
+        this.error = this.$t('youtubeLives.enterQuery');
         return;
       }
       
