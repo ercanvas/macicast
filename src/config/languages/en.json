@@ -41,5 +41,10 @@
     "liveStreams": "Live Streams",
     "searchPlaceholder": "Search channels...",
     "allChannels": "All Channels"
+  },
+  "youtubeLives": {
+    "live": "LIVE",
+    "viewers": "viewers",
+    "addChannelTitle": "Add YouTube Channel"
   }
 } 

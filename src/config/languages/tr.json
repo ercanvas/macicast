@@ -41,5 +41,10 @@
     "liveStreams": "Canlı Yayınlar",
     "searchPlaceholder": "Kanal ara...",
     "allChannels": "Tüm Kanallar"
+  },
+  "youtubeLives": {
+    "live": "CANLI",
+    "viewers": "izleyici",
+    "addChannelTitle": "YouTube Kanalı Ekle"
   }
 } 

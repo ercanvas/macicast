@@ -41,5 +41,10 @@
     "liveStreams": "Прямые трансляции",
     "searchPlaceholder": "Поиск каналов...",
     "allChannels": "Все каналы"
+  },
+  "youtubeLives": {
+    "live": "ПРЯМОЙ ЭФИР",
+    "viewers": "зрителей",
+    "addChannelTitle": "Добавить канал YouTube"
   }
 } 

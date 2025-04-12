@@ -41,5 +41,10 @@
     "liveStreams": "البث المباشر",
     "searchPlaceholder": "البحث عن قنوات...",
     "allChannels": "جميع القنوات"
+  },
+  "youtubeLives": {
+    "live": "مباشر",
+    "viewers": "مشاهدون",
+    "addChannelTitle": "إضافة قناة يوتيوب"
   }
 } 
