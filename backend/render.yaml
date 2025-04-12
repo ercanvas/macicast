@@ -12,6 +12,6 @@ services:
       - key: PORT
         value: 3000
       - key: MONGO_PUBLIC_URL
-        fromGroup: macicast-secrets
+        value: "mongodb+srv://yarmaciercanyasin:ercan02.@macicast.jf27xhq.mongodb.net/macidb?retryWrites=true&w=majority&appName=macicast"
       - key: BACKEND_URL
         value: https://macicast-backend.onrender.com 

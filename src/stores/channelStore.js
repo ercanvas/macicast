@@ -3,6 +3,30 @@ import axios from 'axios';
 
 const API_URL = 'https://macicast-backend.onrender.com/api';
 
+// Define fallback channels in case the API doesn't work
+const fallbackChannels = [
+  {
+    id: 'fallback-1',
+    name: 'TRT 1',
+    channel_number: 1,
+    stream_url: 'https://tv-trt1.medya.trt.com.tr/master.m3u8',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/TRT_1_logo_%282021-%29.svg/512px-TRT_1_logo_%282021-%29.svg.png',
+    category: 'Ulusal',
+    is_active: true,
+    is_hls: true
+  },
+  {
+    id: 'fallback-2',
+    name: 'Show TV',
+    channel_number: 2,
+    stream_url: 'https://ciner-live.daioncdn.net/showtv/showtv.m3u8',
+    logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Show_TV_logo.svg/512px-Show_TV_logo.svg.png',
+    category: 'Ulusal',
+    is_active: true,
+    is_hls: true
+  }
+];
+
 export const useChannelStore = defineStore('channel', {
   state: () => ({
     channels: [],
@@ -21,23 +45,38 @@ export const useChannelStore = defineStore('channel', {
       this.error = null;
       
       try {
-        console.log('API çağrısı yapılıyor:', `${API_URL}/channels`);
-        const response = await axios.get(`${API_URL}/channels`);
-        console.log('API yanıtı:', response.data);
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+        const response = await axios.get(`${apiBaseUrl}/channels`);
         
-        if (Array.isArray(response.data)) {
+        // Use the API response if it contains channels
+        if (response.data && response.data.length > 0) {
           this.channels = response.data;
-          // İlk kanalı varsayılan olarak seç
-          if (this.channels.length > 0 && !this.currentChannel) {
+          
+          // Set the first channel as current if needed
+          if (!this.currentChannel && this.channels.length > 0) {
             this.currentChannel = this.channels[0];
           }
-        } else {
-          throw new Error('API geçersiz veri formatı döndürdü');
+        } 
+        // Fallback to default channels if API returns empty array
+        else {
+          console.warn('API returned no channels, using fallback channels');
+          this.channels = fallbackChannels;
+          
+          // Set the first channel as current
+          if (!this.currentChannel && this.channels.length > 0) {
+            this.currentChannel = this.channels[0];
+          }
         }
       } catch (error) {
-        console.error('Kanal listesi alınırken hata:', error);
-        this.error = 'Kanallar yüklenirken bir hata oluştu';
-        throw error;
+        console.error('Error fetching channels:', error);
+        
+        // Use fallback channels on error
+        this.channels = fallbackChannels;
+        
+        // Set the first channel as current
+        if (!this.currentChannel && this.channels.length > 0) {
+          this.currentChannel = this.channels[0];
+        }
       } finally {
         this.loading = false;
       }
