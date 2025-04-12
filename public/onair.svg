@@ -1,13 +1,13 @@
 <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
-  <!-- Black circle (ice cream scoop) -->
-  <circle cx="40" cy="40" r="20" fill="black" />
+  <!-- Big black circle (ice cream scoop) -->
+  <circle cx="128" cy="80" r="50" fill="black" />
 
-  <!-- Black triangle (cone), attached directly under the circle -->
-  <polygon points="30,60 50,60 40,100" fill="black" />
+  <!-- Black triangle (cone) -->
+  <polygon points="88,130 168,130 128,220" fill="black" />
 
   <!-- Left long radio wave -->
-  <path d="M0 40 A60 60 0 0 1 40 0" stroke="black" fill="none" stroke-width="3"/>
+  <path d="M28 80 A100 100 0 0 1 128 -20" stroke="black" fill="none" stroke-width="6"/>
 
   <!-- Right long radio wave -->
-  <path d="M80 40 A60 60 0 0 0 40 0" stroke="black" fill="none" stroke-width="3"/>
+  <path d="M228 80 A100 100 0 0 0 128 -20" stroke="black" fill="none" stroke-width="6"/>
 </svg>
