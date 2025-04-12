@@ -2,9 +2,9 @@
   <div class="relative h-full w-full bg-black">
     <!-- YouTube Live Embed -->
     <iframe
-      v-if="currentChannel?.type === 'youtube-live'"
+      v-if="currentChannel?.type === 'youtube-live' || showIframe"
       class="h-full w-full"
-      :src="currentChannel?.stream_url"
+      :src="iframeUrl || currentChannel?.stream_url"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
       allowfullscreen
       sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
@@ -13,11 +13,11 @@
     ></iframe>
 
     <!-- Iframe container for fallback embeds -->
-    <div ref="iframeContainer" class="h-full w-full" v-if="showIframe"></div>
+    <!-- <div ref="iframeContainer" class="h-full w-full" v-if="showIframe"></div> -->
 
     <!-- Standard Video Player (remains unchanged) -->
     <video
-      v-else-if="!showIframe"
+      v-else
       ref="videoPlayer"
       class="h-full w-full object-contain"
       autoplay
@@ -119,6 +119,7 @@ export default {
     const loadingMessage = ref('Kanal yükleniyor...');
     const showRetryButton = ref(false);
     const isPlaying = ref(true);
+    const iframeUrl = ref(null);
     let hls = null;
     let playPromise = null;
     let loadingTimeout = null;
@@ -131,7 +132,6 @@ export default {
     const currentStreamIndex = ref(0);
     const MAX_MANIFEST_LOAD_RETRIES = 3;
     const manifestLoadRetryCount = ref(0);
-    const iframeContainer = ref(null);
     const showIframe = ref(false);
 
     const clearTimeouts = () => {
@@ -203,6 +203,13 @@ export default {
       if (hls) {
         hls.destroy();
         hls = null;
+      }
+
+      // Check if this is a YouTube embed URL - we need to handle this differently
+      if (url.includes('youtube.com/embed/')) {
+        console.log('Detected YouTube embed URL, using iframe instead of HLS');
+        showIframePlayer(url);
+        return;
       }
 
       // Check if the URL is a YouTube Live HLS stream
@@ -729,6 +736,10 @@ export default {
         hls = null;
       }
       
+      // Clean up iframe state
+      showIframe.value = false;
+      iframeUrl.value = null;
+      
       if (videoPlayer.value) {
         try {
           await videoPlayer.value.pause();
@@ -806,38 +817,15 @@ export default {
 
     // Function to show iframe player for YouTube embeds
     const showIframePlayer = (embedUrl) => {
-      // Make sure we have the container
-      if (!iframeContainer.value) {
-        console.error('Iframe container not found');
-        error.value = 'Video oynatıcı hazırlanamadı';
-        return;
-      }
-
-      // Hide the video element if showing iframe
+      console.log('Showing iframe player with URL:', embedUrl);
+      
+      // Set the iframe URL directly
+      iframeUrl.value = embedUrl;
+      
+      // Show iframe and hide loader/errors
       showIframe.value = true;
-      
-      // Clear any existing content in the iframe container
-      iframeContainer.value.innerHTML = '';
-      
-      // Create the iframe element
-      const iframe = document.createElement('iframe');
-      iframe.className = 'h-full w-full';
-      iframe.src = embedUrl;
-      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
-      iframe.allowFullscreen = true;
-      iframe.sandbox = 'allow-same-origin allow-scripts allow-popups allow-forms';
-      iframe.referrerPolicy = 'origin';
-      iframe.loading = 'eager';
-      iframe.style.border = 'none';
-      
-      // Add the iframe to the container
-      iframeContainer.value.appendChild(iframe);
-      
-      // Hide loading and error states
       isLoading.value = false;
       error.value = null;
-      
-      console.log('Iframe player shown with URL:', embedUrl);
     };
 
     watch(currentChannel, async (newChannel) => {
@@ -848,13 +836,26 @@ export default {
         currentStreamIndex.value = 0;
         showRetryButton.value = false;
         
+        // Reset iframe state
+        iframeUrl.value = null;
+        showIframe.value = false;
+        
+        const streamUrl = newChannel.url || newChannel.stream_url;
+        console.log('Loading channel:', newChannel.name, 'Type:', newChannel.type, 'URL:', streamUrl);
+        
+        // Handle YouTube content or embed URLs directly with iframe
+        if (newChannel.type === 'youtube-live' || streamUrl.includes('youtube.com/embed/')) {
+          console.log('Using iframe for YouTube content');
+          showIframePlayer(streamUrl);
+          return;
+        }
+        
+        // For other streams, use HLS.js with standard video player
         if (videoPlayer.value) {
           await cleanupVideo();
           
           setTimeout(() => {
             if (!isDestroyed.value) {
-              const streamUrl = newChannel.url || newChannel.stream_url;
-              console.log('Loading channel:', newChannel.name, 'Type:', newChannel.type, 'URL:', streamUrl);
               initializeHls(videoPlayer.value, streamUrl);
             }
           }, 1000);
@@ -877,10 +878,9 @@ export default {
         hls = null;
       }
       
-      // Clean up iframe if it exists
-      if (iframeContainer.value) {
-        iframeContainer.value.innerHTML = '';
-      }
+      // Clean up iframe state
+      showIframe.value = false;
+      iframeUrl.value = null;
       
       // Clear any pending timeouts
       clearTimeouts();
@@ -907,7 +907,7 @@ export default {
       handleEnded,
       retryLoading,
       togglePlay,
-      iframeContainer,
+      iframeUrl,
       showIframe,
       volumeIcon
     };
