@@ -7,14 +7,20 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="bi bi-tv text-primary text-xl"></i>
-            <h2 class="text-lg font-bold">{{ $t('channelList.title') }}</h2>
+            <h2 class="text-lg font-bold">{{ translate('channelList.title') }}</h2>
           </div>
           <div class="flex items-center gap-2">
+            <button @click="purgeAllChannels" 
+                   class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
+                   title="Delete all channels">
+              <i class="bi bi-trash"></i>
+              <span class="hidden sm:inline">Tüm Kanalları Sil</span>
+            </button>
             <button @click="showYoutubeLives = true" 
                     class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
                     title="Find live broadcasts">
               <i class="bi bi-broadcast"></i>
-              <span class="hidden sm:inline">{{ $t('channelList.liveStreams') }}</span>
+              <span class="hidden sm:inline">{{ translate('channelList.liveStreams') }}</span>
             </button>
             <button @click="showAddChannel = true" 
                     class="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center">
@@ -33,7 +39,7 @@
             <input 
               v-model="searchQuery"
               type="text"
-              :placeholder="$t('channelList.searchPlaceholder')"
+              :placeholder="translate('channelList.searchPlaceholder')"
               class="w-full bg-gray-800/50 rounded-xl px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
             >
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -42,7 +48,7 @@
             v-model="selectedCategory"
             class="bg-gray-800/50 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            <option value="">{{ $t('channelList.allChannels') }}</option>
+            <option value="">{{ translate('channelList.allChannels') }}</option>
             <option v-for="category in categories" :key="category" :value="category">
               {{ category }}
             </option>
@@ -58,8 +64,8 @@
                  class="text-sm text-gray-400 mb-2 pl-2 sticky top-0 bg-black/95 py-2 z-10 backdrop-blur flex items-center"
                  :class="{'text-red-500': category === 'Lives'}">
               <i v-if="category === 'Lives'" class="bi bi-broadcast mr-2 text-red-500"></i>
-              {{ category === 'Lives' ? $t('channelList.lives') : category }}
-              <span v-if="category === 'Lives'" class="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{{ $t('channelList.live') }}</span>
+              {{ category === 'Lives' ? translate('channelList.lives') : category }}
+              <span v-if="category === 'Lives'" class="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{{ translate('channelList.live') }}</span>
             </div>
             
             <div class="space-y-2">
@@ -84,7 +90,7 @@
 
                 <div class="flex-1 min-w-0">
                   <div class="font-medium truncate">{{ channel.name }}</div>
-                  <div class="text-xs text-gray-400">{{ $t('channelList.channel') }} {{ channel.channel_number }}</div>
+                  <div class="text-xs text-gray-400">{{ translate('channelList.channel') }} {{ channel.channel_number }}</div>
                 </div>
 
                 <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -97,7 +103,7 @@
 
         <!-- User Streams Section -->
         <div v-if="store.hasUserStreams" class="mt-4">
-          <h3 class="text-lg font-bold mb-2">{{ $t('channelList.userStreams') }}</h3>
+          <h3 class="text-lg font-bold mb-2">{{ translate('channelList.userStreams') }}</h3>
           <div class="space-y-2">
             <button
               v-for="stream in store.userStreams" 
@@ -112,7 +118,7 @@
 
               <div class="flex-1 min-w-0">
                 <div class="font-medium truncate">{{ stream.name }}</div>
-                <div class="text-xs text-primary">{{ $t('channelList.liveStream') }}</div>
+                <div class="text-xs text-primary">{{ translate('channelList.liveStream') }}</div>
               </div>
 
               <div class="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -306,8 +312,48 @@ export default {
       selectedCategory.value = category;
     };
 
-    const $t = (key) => {
+    const translate = (key) => {
       return languageStore.t(key);
+    };
+
+    const purgeAllChannels = async () => {
+      try {
+        isResetting.value = true;
+        error.value = null;
+        
+        if (!confirm('Bu işlem tüm kanalları kalıcı olarak silecektir. Devam etmek istiyor musunuz?')) {
+          isResetting.value = false;
+          return;
+        }
+        
+        // Call the purge endpoint on the server
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
+        const response = await axios.delete(`${apiBaseUrl}/channels/purge`);
+        
+        // Update local channels list to empty list
+        if (response.data && response.data.success) {
+          channels.value = [];
+          
+          // Also update the store with empty channels
+          store.setChannels([]);
+          
+          // Reset current channel
+          store.setCurrentChannel(null);
+          
+          alert('Tüm kanallar başarıyla silindi!');
+          
+          // Refresh channels to ensure all UI elements update
+          fetchChannels();
+        } else {
+          throw new Error(response.data.message || 'Channels could not be deleted');
+        }
+      } catch (err) {
+        console.error('Error purging channels:', err);
+        error.value = `Kanal listesi temizlenirken bir hata oluştu: ${err.message || 'Bilinmeyen hata'}`;
+        alert(`Kanallar silinirken bir hata oluştu: ${err.message || 'Bilinmeyen hata'}`);
+      } finally {
+        isResetting.value = false;
+      }
     };
 
     return {
@@ -329,7 +375,8 @@ export default {
       resetChannels,
       isResetting,
       selectCategory,
-      $t
+      translate,
+      purgeAllChannels
     };
   }
 };

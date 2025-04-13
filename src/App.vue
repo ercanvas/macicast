@@ -112,6 +112,7 @@
         @open-youtube-hls="showYouTubeConverter = true"
         @open-user-profile="showUserProfile = true"
         @open-auth="showAuth = true"
+        @open-m3u-import="showM3UImport = true"
         @toggle-fullscreen="handleFullscreenToggle"
         @close-all="closeAllComponents"
       />
@@ -176,6 +177,16 @@
           <Auth @close="showAuth = false" />
         </div>
       </div>
+
+      <!-- M3U To Channel List Modal -->
+      <div v-if="showM3UImport" class="modal-backdrop">
+        <div class="modal-content">
+          <M3UToChannelList 
+            @close="showM3UImport = false" 
+            @channels-added="handleChannelsAdded" 
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -198,6 +209,7 @@ import Auth from './components/Auth.vue'
 import MobileCircleMenu from './components/MobileCircleMenu.vue'
 import KeyboardInfoBar from './components/KeyboardInfoBar.vue'
 import InfoToggleButton from './components/InfoToggleButton.vue'
+import M3UToChannelList from './components/M3UToChannelList.vue'
 
 export default {
   name: 'App',
@@ -215,7 +227,8 @@ export default {
     Auth,
     MobileCircleMenu,
     KeyboardInfoBar,
-    InfoToggleButton
+    InfoToggleButton,
+    M3UToChannelList
   },
   setup() {
     // Reference to TVScreen component
@@ -237,6 +250,7 @@ export default {
     const showUserProfile = ref(false)
     const showAuth = ref(false)
     const showKeyboardInfo = ref(false)
+    const showM3UImport = ref(false)
     let channelInfoTimeout = null
 
     // Add a ref to track if an input element has focus
@@ -304,43 +318,52 @@ export default {
     // Add global focus and blur event listeners
     const handleGlobalFocus = (e) => {
       const target = e.target;
-      if (
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
-        target.isContentEditable || 
-        target.getAttribute('role') === 'textbox' ||
-        target.classList.contains('form-control')
-      ) {
-        inputHasFocus.value = true;
-        console.log('Input element focused, keyboard shortcuts disabled');
+      if (target && typeof target === 'object') {
+        if (
+          target.tagName === 'INPUT' || 
+          target.tagName === 'TEXTAREA' || 
+          target.isContentEditable || 
+          (target.getAttribute && target.getAttribute('role') === 'textbox') ||
+          (target.classList && target.classList.contains('form-control'))
+        ) {
+          inputHasFocus.value = true;
+          console.log('Input element focused, keyboard shortcuts disabled');
+        }
       }
     };
 
     const handleGlobalBlur = (e) => {
       const target = e.target;
-      if (
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
-        target.isContentEditable || 
-        target.getAttribute('role') === 'textbox' ||
-        target.classList.contains('form-control')
-      ) {
-        inputHasFocus.value = false;
-        console.log('Input element blurred, keyboard shortcuts enabled');
+      // Check if target exists and has valid properties before accessing them
+      if (target && typeof target === 'object') {
+        if (
+          target.tagName === 'INPUT' || 
+          target.tagName === 'TEXTAREA' || 
+          target.isContentEditable || 
+          (target.getAttribute && target.getAttribute('role') === 'textbox') ||
+          (target.classList && target.classList.contains('form-control'))
+        ) {
+          inputHasFocus.value = false;
+          console.log('Input element blurred, keyboard shortcuts enabled');
+        }
       }
     };
 
     // Update handleKeyPress to check inputHasFocus
     const handleKeyPress = (e) => {
+      // Ensure target exists and is an object before accessing properties
+      const target = e.target;
+      if (!target || typeof target !== 'object') return;
+      
       // Skip if an input element has focus or if the event target is an input
       if (
         inputHasFocus.value ||
-        e.target.tagName === 'INPUT' || 
-        e.target.tagName === 'TEXTAREA' || 
-        e.target.isContentEditable || 
-        e.target.getAttribute('role') === 'textbox' ||
-        e.target.classList.contains('form-control') ||
-        e.target.closest('.form-control')
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable || 
+        (target.getAttribute && target.getAttribute('role') === 'textbox') ||
+        (target.classList && target.classList.contains('form-control')) ||
+        (target.closest && target.closest('.form-control'))
       ) {
         // Only log when not already blocked by inputHasFocus to reduce console spam
         if (!inputHasFocus.value) {
@@ -350,10 +373,10 @@ export default {
       }
       
       // Skip if event target is the YouTube overlay
-      if (e.target.classList && 
-          e.target.classList.contains('absolute') && 
-          e.target.classList.contains('inset-0') && 
-          e.target.classList.contains('z-10')) {
+      if (target.classList && 
+          target.classList.contains('absolute') && 
+          target.classList.contains('inset-0') && 
+          target.classList.contains('z-10')) {
         console.log('Key event handled by YouTube overlay, skipping global handler');
         return;
       }
@@ -397,6 +420,12 @@ export default {
         showChannelList.value = false;
         showRemote.value = false;
         showUserProfile.value = false;
+      } else if (e.key.toLowerCase() === 'm') {
+        // Toggle M3U Import panel
+        showM3UImport.value = !showM3UImport.value;
+        // Hide other panels when M3U Import is shown
+        showChannelList.value = false;
+        showRemote.value = false;
       }
     };
 
@@ -456,7 +485,7 @@ export default {
       showLanguageSelector.value = false;
     };
 
-    const $t = (key) => {
+    const translate = (key) => {
       return languageStore.t(key);
     };
 
@@ -470,6 +499,7 @@ export default {
       showLanguageSelector.value = false;
       showUserProfile.value = false;
       showAuth.value = false;
+      showM3UImport.value = false;
     };
 
     const handleFullscreenToggle = () => {
@@ -479,6 +509,10 @@ export default {
 
     const toggleKeyboardInfo = () => {
       showKeyboardInfo.value = !showKeyboardInfo.value;
+    };
+
+    const handleChannelsAdded = (channels) => {
+      console.log(`Added ${channels.length} channels from M3U list`);
     };
 
     // Set YouTube API key
@@ -513,12 +547,14 @@ export default {
       showAuth,
       languageStore,
       selectLanguage,
-      $t,
+      translate,
       tvScreen,
       closeAllComponents,
       handleFullscreenToggle,
       showKeyboardInfo,
-      toggleKeyboardInfo
+      toggleKeyboardInfo,
+      showM3UImport,
+      handleChannelsAdded
     }
   }
 }

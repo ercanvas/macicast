@@ -58,35 +58,18 @@ export const useChannelStore = defineStore('channel', {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
         const response = await axios.get(`${apiBaseUrl}/channels`);
         
-        // Use the API response if it contains channels
-        if (response.data && response.data.length > 0) {
-          this.channels = response.data;
-          
-          // Set the first channel as current if needed
-          if (!this.currentChannel && this.channels.length > 0) {
-            this.currentChannel = this.channels[0];
-          }
-        } 
-        // Fallback to default channels if API returns empty array
-        else {
-          console.warn('API returned no channels, using fallback channels');
-          this.channels = fallbackChannels;
-          
-          // Set the first channel as current
-          if (!this.currentChannel && this.channels.length > 0) {
-            this.currentChannel = this.channels[0];
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching channels:', error);
+        // Use the API response - don't fallback to default channels
+        this.channels = response.data || [];
         
-        // Use fallback channels on error
-        this.channels = fallbackChannels;
-        
-        // Set the first channel as current
+        // Set the first channel as current if needed
         if (!this.currentChannel && this.channels.length > 0) {
           this.currentChannel = this.channels[0];
         }
+      } catch (error) {
+        console.error('Error fetching channels:', error);
+        // Don't set fallback channels on error
+        this.channels = [];
+        this.currentChannel = null;
       } finally {
         this.loading = false;
       }

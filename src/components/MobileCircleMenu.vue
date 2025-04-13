@@ -104,6 +104,16 @@
       <i class="bi bi-key"></i>
     </button>
 
+    <!-- M3U Import Button -->
+    <button 
+      v-show="isOpen" 
+      @click="openM3UImport"
+      class="circle-button m3u-import-btn"
+      :class="{'visible': isOpen}"
+    >
+      <i class="bi bi-list-ul"></i>
+    </button>
+
     <!-- Lock Position Button -->
     <button 
       v-show="isOpen" 
@@ -146,7 +156,8 @@ export default {
     'open-user-profile',
     'open-auth',
     'toggle-fullscreen',
-    'close-all'
+    'close-all',
+    'open-m3u-import'
   ],
   setup(props, { emit }) {
     const isOpen = ref(false);
@@ -218,6 +229,11 @@ export default {
       if (!isPositionLocked.value) closeMenu();
     };
 
+    const openM3UImport = () => {
+      emit('open-m3u-import');
+      if (!isPositionLocked.value) closeMenu();
+    };
+
     const toggleFullscreen = () => {
       if (checkFullscreen()) {
         document.exitFullscreen().then(() => {
@@ -273,6 +289,7 @@ export default {
       openYouTubeToHLS,
       openUserProfile,
       openAuth,
+      openM3UImport,
       toggleFullscreen,
       togglePositionLock,
       closeAllComponents
@@ -400,6 +417,10 @@ export default {
 
 .auth-btn.visible {
   transform: translate(-50%, -50%) translate(-97px, -126px); /* 10:30 position (56°) */
+}
+
+.m3u-import-btn.visible {
+  transform: translate(-50%, -50%) translate(-49px, -151px); /* 11 o'clock position (77°) */
 }
 
 .lock-btn.visible {

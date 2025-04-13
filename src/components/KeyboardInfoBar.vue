@@ -36,6 +36,10 @@
             <span class="desc">Auth</span>
           </div>
           <div class="shortcut-item">
+            <span class="key">M</span>
+            <span class="desc">M3U Import</span>
+          </div>
+          <div class="shortcut-item">
             <span class="key">↑↓</span>
             <span class="desc">Change Channel</span>
           </div>
