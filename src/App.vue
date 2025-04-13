@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-900 to-black">
+    <!-- Keyboard Shortcuts Info Bar (Desktop Only) -->
+    <KeyboardInfoBar />
+    
     <!-- Mobil Dikey Uyarısı -->
     <div v-if="isMobilePortrait" 
          class="fixed inset-0 bg-black/95 z-50 flex flex-col items-center justify-center p-6 text-center">
@@ -188,6 +191,7 @@ import LanguageSelector from './components/LanguageSelector.vue'
 import UserProfile from './components/UserProfile.vue'
 import Auth from './components/Auth.vue'
 import MobileCircleMenu from './components/MobileCircleMenu.vue'
+import KeyboardInfoBar from './components/KeyboardInfoBar.vue'
 
 export default {
   name: 'App',
@@ -203,7 +207,8 @@ export default {
     LanguageSelector,
     UserProfile,
     Auth,
-    MobileCircleMenu
+    MobileCircleMenu,
+    KeyboardInfoBar
   },
   setup() {
     // Reference to TVScreen component
