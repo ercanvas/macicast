@@ -4,7 +4,7 @@
     <button 
       @click="toggleMenu" 
       class="main-button"
-      :class="{'menu-open': isOpen}"
+      :class="{'menu-open': isOpen, 'position-locked': isPositionLocked}"
     >
       <i class="bi" :class="isOpen ? 'bi-dash-lg' : 'bi-plus-lg'"></i>
     </button>
@@ -74,6 +74,46 @@
       <i class="bi bi-youtube"></i>
     </button>
 
+    <!-- Fullscreen Button -->
+    <button 
+      v-show="isOpen" 
+      @click="toggleFullscreen"
+      class="circle-button fullscreen-btn"
+      :class="{'visible': isOpen}"
+    >
+      <i class="bi" :class="isFullscreen ? 'bi-fullscreen-exit' : 'bi-fullscreen'"></i>
+    </button>
+
+    <!-- User Profile Button -->
+    <button 
+      v-show="isOpen" 
+      @click="openUserProfile"
+      class="circle-button profile-btn"
+      :class="{'visible': isOpen}"
+    >
+      <i class="bi bi-person"></i>
+    </button>
+
+    <!-- Auth Button -->
+    <button 
+      v-show="isOpen" 
+      @click="openAuth"
+      class="circle-button auth-btn"
+      :class="{'visible': isOpen}"
+    >
+      <i class="bi bi-key"></i>
+    </button>
+
+    <!-- Lock Position Button -->
+    <button 
+      v-show="isOpen" 
+      @click="togglePositionLock"
+      class="circle-button lock-btn"
+      :class="{'visible': isOpen, 'active': isPositionLocked}"
+    >
+      <i class="bi" :class="isPositionLocked ? 'bi-lock-fill' : 'bi-unlock'"></i>
+    </button>
+
     <!-- Close Button (X) -->
     <button 
       v-show="isOpen" 
@@ -103,23 +143,35 @@ export default {
     'open-add-channel', 
     'open-youtube-lives', 
     'open-youtube-hls',
+    'open-user-profile',
+    'open-auth',
+    'toggle-fullscreen',
     'close-all'
   ],
   setup(props, { emit }) {
     const isOpen = ref(false);
     const isPlaying = ref(true);
+    const isFullscreen = ref(false);
+    const isPositionLocked = ref(false);
+
+    // Check if the app is currently in fullscreen mode
+    const checkFullscreen = () => {
+      return document.fullscreenElement !== null;
+    };
 
     const toggleMenu = () => {
       isOpen.value = !isOpen.value;
     };
 
     const closeMenu = () => {
-      isOpen.value = false;
+      if (!isPositionLocked.value) {
+        isOpen.value = false;
+      }
     };
 
     const openChannelList = () => {
       emit('open-channel-list');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
 
     const togglePlayback = () => {
@@ -133,37 +185,84 @@ export default {
         }
       }
       
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
 
     const openRemoteControl = () => {
       emit('open-remote-control');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
 
     const openAddChannel = () => {
       emit('open-add-channel');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
 
     const openYouTubeLives = () => {
       emit('open-youtube-lives');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
 
     const openYouTubeToHLS = () => {
       emit('open-youtube-hls');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
+    };
+
+    const openUserProfile = () => {
+      emit('open-user-profile');
+      if (!isPositionLocked.value) closeMenu();
+    };
+
+    const openAuth = () => {
+      emit('open-auth');
+      if (!isPositionLocked.value) closeMenu();
+    };
+
+    const toggleFullscreen = () => {
+      if (checkFullscreen()) {
+        document.exitFullscreen().then(() => {
+          isFullscreen.value = false;
+        }).catch(err => {
+          console.error('Error exiting fullscreen', err);
+        });
+      } else {
+        document.documentElement.requestFullscreen().then(() => {
+          isFullscreen.value = true;
+        }).catch(err => {
+          console.error('Error entering fullscreen', err);
+        });
+      }
+      emit('toggle-fullscreen');
+      if (!isPositionLocked.value) closeMenu();
+    };
+
+    const togglePositionLock = () => {
+      isPositionLocked.value = !isPositionLocked.value;
+      // Store the preference in localStorage
+      localStorage.setItem('mobileMenuPositionLocked', isPositionLocked.value ? 'true' : 'false');
     };
 
     const closeAllComponents = () => {
       emit('close-all');
-      closeMenu();
+      if (!isPositionLocked.value) closeMenu();
     };
+
+    // Initialize fullscreen state
+    document.addEventListener('fullscreenchange', () => {
+      isFullscreen.value = checkFullscreen();
+    });
+
+    // Check for stored position lock preference on component creation
+    const storedLockPreference = localStorage.getItem('mobileMenuPositionLocked');
+    if (storedLockPreference === 'true') {
+      isPositionLocked.value = true;
+    }
 
     return {
       isOpen,
       isPlaying,
+      isFullscreen,
+      isPositionLocked,
       toggleMenu,
       closeMenu,
       openChannelList,
@@ -172,6 +271,10 @@ export default {
       openAddChannel,
       openYouTubeLives,
       openYouTubeToHLS,
+      openUserProfile,
+      openAuth,
+      toggleFullscreen,
+      togglePositionLock,
       closeAllComponents
     };
   }
@@ -187,8 +290,8 @@ export default {
 }
 
 .main-button {
-  width: 4rem;
-  height: 4rem;
+  width: 4.5rem;
+  height: 4.5rem;
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(8px);
@@ -217,9 +320,13 @@ export default {
   transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
 }
 
+.main-button.position-locked {
+  border-color: #28a745;
+}
+
 .circle-button {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 4rem;
+  height: 4rem;
   border-radius: 50%;
   background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(8px);
@@ -227,7 +334,7 @@ export default {
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   border: 2px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   position: fixed;
@@ -246,35 +353,58 @@ export default {
   right: auto;
 }
 
-/* Position buttons in a perfect circle/donut around the center */
+.circle-button.active {
+  background-color: rgba(40, 167, 69, 0.9); /* Green for active lock button */
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Position buttons in a perfect circle (O shape) around the center with equal spacing */
+/* Using 11 buttons at 32.7 degrees spacing each to form a perfect circle */
+
 .channel-list-btn.visible {
-  transform: translate(-50%, -50%) translate(0px, -120px);
+  transform: translate(-50%, -50%) translate(0px, -160px); /* 12 o'clock (90°) */
 }
 
 .play-pause-btn.visible {
-  transform: translate(-50%, -50%) translate(85px, -85px);
+  transform: translate(-50%, -50%) translate(97px, -126px); /* 1:30 position (123°) */
 }
 
 .remote-control-btn.visible {
-  transform: translate(-50%, -50%) translate(120px, 0px);
+  transform: translate(-50%, -50%) translate(151px, -49px); /* 3 o'clock (157°) */
 }
 
 .add-channel-btn.visible {
-  transform: translate(-50%, -50%) translate(85px, 85px);
+  transform: translate(-50%, -50%) translate(151px, 49px); /* 4:30 position (192°) */
 }
 
 .youtube-lives-btn.visible {
-  transform: translate(-50%, -50%) translate(0px, 120px);
+  transform: translate(-50%, -50%) translate(97px, 126px); /* 5:30 position (225°) */
 }
 
 .youtube-hls-btn.visible {
-  transform: translate(-50%, -50%) translate(-85px, 85px);
+  transform: translate(-50%, -50%) translate(0px, 160px); /* 6 o'clock (270°) */
 }
 
-/* Position close button as part of the circle */
 .close-btn.visible {
-  transform: translate(-50%, -50%) translate(-120px, 0px);
-  background-color: rgba(220, 53, 69, 0.8); /* Red background for close button */
+  transform: translate(-50%, -50%) translate(-97px, 126px); /* 7:30 position (315°) */
+  background-color: rgba(220, 53, 69, 0.8); /* Red for close button */
+}
+
+.fullscreen-btn.visible {
+  transform: translate(-50%, -50%) translate(-151px, 49px); /* 8:30 position (348°) */
+}
+
+.profile-btn.visible {
+  transform: translate(-50%, -50%) translate(-151px, -49px); /* 10 o'clock (22°) */
+}
+
+.auth-btn.visible {
+  transform: translate(-50%, -50%) translate(-97px, -126px); /* 10:30 position (56°) */
+}
+
+.lock-btn.visible {
+  transform: translate(-50%, -50%) translate(-50px, -20px); /* Position near center */
+  background-color: rgba(40, 167, 69, 0.7); /* Green for lock button */
 }
 
 .circle-menu-overlay {

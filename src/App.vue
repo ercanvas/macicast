@@ -108,6 +108,9 @@
         @open-add-channel="showAddChannel = true"
         @open-youtube-lives="showYoutubeLives = true"
         @open-youtube-hls="showYouTubeConverter = true"
+        @open-user-profile="showUserProfile = true"
+        @open-auth="showAuth = true"
+        @toggle-fullscreen="handleFullscreenToggle"
         @close-all="closeAllComponents"
       />
 
@@ -466,6 +469,14 @@ export default {
       showAuth.value = false;
     };
 
+    const handleFullscreenToggle = () => {
+      // This is just a placeholder as the actual fullscreen logic is in MobileCircleMenu
+      console.log('Fullscreen toggled from App.vue');
+    };
+
+    // Set YouTube API key
+    window.YOUTUBE_API_KEY = 'AIzaSyDLNU8j5aqwaSEg1llzJfrd6QpwoyihbBo';
+
     return {
       showChannelList,
       showRemote,
@@ -497,7 +508,8 @@ export default {
       selectLanguage,
       $t,
       tvScreen,
-      closeAllComponents
+      closeAllComponents,
+      handleFullscreenToggle
     }
   }
 }

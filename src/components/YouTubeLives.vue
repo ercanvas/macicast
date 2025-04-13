@@ -128,7 +128,7 @@ export default {
             q: this.searchQuery,
             type: 'video',
             eventType: 'live',
-            key: process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY,
+            key: window.YOUTUBE_API_KEY || process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY,
             maxResults: 10
           }
         });
@@ -144,7 +144,7 @@ export default {
           params: {
             part: 'snippet,statistics,liveStreamingDetails',
             id: videoIds,
-            key: process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY
+            key: window.YOUTUBE_API_KEY || process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY
           }
         });
         
@@ -254,7 +254,7 @@ export default {
           params: {
             part: 'snippet,liveStreamingDetails',
             id: videoIds,
-            key: process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY
+            key: window.YOUTUBE_API_KEY || process.env.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY
           }
         });
         
