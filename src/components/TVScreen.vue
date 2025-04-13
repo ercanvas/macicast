@@ -54,39 +54,6 @@
       Tarayıcınız video oynatmayı desteklemiyor.
     </video>
 
-    <!-- Mobil Kontroller -->
-    <div class="fixed top-8 left-1/2 -translate-x-1/2 flex flex-row items-center gap-4 z-50 visible-mobile">
-      <!-- Remote Control Butonu -->
-      <button 
-        @click="$emit('toggle-remote')"
-        class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center 
-               text-white hover:text-white transition-all border-2 border-white/20 
-               active:scale-95 hover:scale-105 shadow-lg"
-      >
-        <i class="bi bi-controller text-2xl"></i>
-      </button>
-
-      <!-- Play/Pause Butonu -->
-      <button 
-        @click="togglePlay"
-        class="w-20 h-20 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center 
-               text-white hover:text-white transition-all border-2 border-white/20 
-               active:scale-95 hover:scale-105 shadow-lg"
-      >
-        <i :class="['bi text-4xl', isPlaying ? 'bi-pause-fill' : 'bi-play-fill']"></i>
-      </button>
-
-      <!-- Kanal Listesi Butonu -->
-      <button 
-        @click="$emit('toggle-channels')"
-        class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center 
-               text-white hover:text-white transition-all border-2 border-white/20 
-               active:scale-95 hover:scale-105 shadow-lg"
-      >
-        <i class="bi bi-tv text-2xl"></i>
-      </button>
-    </div>
-
     <!-- Loading Overlay -->
     <div v-if="isLoading && !error" 
          class="absolute inset-0 bg-black/80 flex items-center justify-center">
@@ -294,20 +261,40 @@ export default {
     };
 
     const togglePlay = async () => {
+      console.log('Toggle play');
       if (!videoPlayer.value) return;
 
       try {
         if (videoPlayer.value.paused) {
+          isPlaying.value = true;
           await safePlay();
         } else {
+          isPlaying.value = false;
           if (playPromise) {
             await playPromise;
           }
           videoPlayer.value.pause();
-          isPlaying.value = false;
         }
       } catch (err) {
         console.error('Video oynatma/durdurma hatası:', err);
+      }
+    };
+
+    // Add direct play method for external control
+    const play = async () => {
+      console.log('Play from external control');
+      if (videoPlayer.value && videoPlayer.value.paused) {
+        isPlaying.value = true;
+        await safePlay();
+      }
+    };
+
+    // Add direct pause method for external control
+    const pause = () => {
+      console.log('Pause from external control');
+      if (videoPlayer.value && !videoPlayer.value.paused) {
+        isPlaying.value = false;
+        videoPlayer.value.pause();
       }
     };
 
@@ -1174,6 +1161,8 @@ export default {
       updateFavicon,
       updateDocumentTitle,
       changeLanguage,
+      play,
+      pause,
     };
   }
 };

@@ -96,26 +96,17 @@
         </div>
       </Transition>
 
-      <!-- Mobile Controls - Only visible on mobile -->
-      <div v-if="isMobile" class="fixed bottom-8 left-0 right-0 flex justify-center gap-4 z-50">
-        <button @click="toggleChannelList" 
-                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
-          <i class="bi bi-tv text-2xl"></i>
-        </button>
-        <button @click="toggleRemote" 
-                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
-          <i class="bi bi-controller text-2xl"></i>
-        </button>
-        <button @click="showYoutubeLives = true" 
-                class="w-14 h-14 rounded-full bg-red-500/80 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg"
-                title="Find live broadcasts">
-          <i class="bi bi-broadcast text-2xl"></i>
-        </button>
-        <button @click="toggleStreamManager" 
-                class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:text-white transition-all border-2 border-white/20 active:scale-95 hover:scale-105 shadow-lg">
-          <i class="bi bi-camera-video text-2xl"></i>
-        </button>
-      </div>
+      <!-- Mobile Circle Menu - Only visible on mobile -->
+      <MobileCircleMenu 
+        v-if="isMobile" 
+        :tvScreenRef="tvScreen"
+        @open-channel-list="showChannelList = true"
+        @open-remote-control="showRemote = true"
+        @open-add-channel="showAddChannel = true"
+        @open-youtube-lives="showYoutubeLives = true"
+        @open-youtube-hls="showYouTubeConverter = true"
+        @close-all="closeAllComponents"
+      />
 
       <!-- Stream Manager -->
       <Transition
@@ -196,6 +187,7 @@ import YouTubeLives from './components/YouTubeLives.vue'
 import LanguageSelector from './components/LanguageSelector.vue'
 import UserProfile from './components/UserProfile.vue'
 import Auth from './components/Auth.vue'
+import MobileCircleMenu from './components/MobileCircleMenu.vue'
 
 export default {
   name: 'App',
@@ -210,7 +202,8 @@ export default {
     YouTubeLives,
     LanguageSelector,
     UserProfile,
-    Auth
+    Auth,
+    MobileCircleMenu
   },
   setup() {
     // Reference to TVScreen component
@@ -238,7 +231,8 @@ export default {
 
     // Check if device is mobile
     const checkDevice = () => {
-      isMobile.value = window.innerWidth < 768 // or any breakpoint you prefer
+      isMobile.value = window.innerWidth < 1024 // Use a larger breakpoint to ensure mobile menu is shown on tablets too
+      console.log('Device check - Is Mobile:', isMobile.value, 'Window width:', window.innerWidth)
     }
 
     // Ekran yönü kontrolü
@@ -455,6 +449,18 @@ export default {
       return languageStore.t(key);
     };
 
+    const closeAllComponents = () => {
+      showChannelList.value = false;
+      showRemote.value = false;
+      showStreamManager.value = false;
+      showAddChannel.value = false;
+      showYouTubeConverter.value = false;
+      showYoutubeLives.value = false;
+      showLanguageSelector.value = false;
+      showUserProfile.value = false;
+      showAuth.value = false;
+    };
+
     return {
       showChannelList,
       showRemote,
@@ -485,7 +491,8 @@ export default {
       languageStore,
       selectLanguage,
       $t,
-      tvScreen
+      tvScreen,
+      closeAllComponents
     }
   }
 }
