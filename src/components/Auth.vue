@@ -270,15 +270,28 @@ export default {
           formData.append('profileImage', signupForm.value.profileImage);
         }
 
+        console.log('Submitting signup form to:', endpoints.register);
+        
+        // Use regular fetch with specific content type (browser will set the correct boundary)
         const response = await fetch(endpoints.register, {
           method: 'POST',
-          body: formData
+          body: formData,
+          // Don't set Content-Type header for FormData - browser will set it correctly with the boundary
         });
 
-        const data = await response.json();
+        console.log('Signup response status:', response.status);
+        
+        let data;
+        try {
+          data = await response.json();
+          console.log('Signup response data:', data);
+        } catch (jsonError) {
+          console.error('Error parsing response JSON:', jsonError);
+          throw new Error('Invalid response from server. Please try again.');
+        }
 
         if (!response.ok) {
-          throw new Error(data.error || 'Registration failed');
+          throw new Error(data.error || data.message || 'Registration failed');
         }
 
         // Store token
