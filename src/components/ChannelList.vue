@@ -16,12 +16,6 @@
               <i class="bi bi-trash"></i>
               <span class="hidden sm:inline">Tüm Kanalları Sil</span>
             </button>
-            <button @click="showYoutubeLives = true" 
-                    class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
-                    title="Find live broadcasts">
-              <i class="bi bi-broadcast"></i>
-              <span class="hidden sm:inline">{{ translate('channelList.liveStreams') }}</span>
-            </button>
             <button @click="showAddChannel = true" 
                     class="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center">
               <i class="bi bi-plus-lg"></i>
@@ -61,11 +55,8 @@
         <div class="space-y-4 py-4">
           <div v-for="category in filteredCategories" :key="category">
             <div v-if="!selectedCategory" 
-                 class="text-sm text-gray-400 mb-2 pl-2 sticky top-0 bg-black/95 py-2 z-10 backdrop-blur flex items-center"
-                 :class="{'text-red-500': category === 'Lives'}">
-              <i v-if="category === 'Lives'" class="bi bi-broadcast mr-2 text-red-500"></i>
-              {{ category === 'Lives' ? translate('channelList.lives') : category }}
-              <span v-if="category === 'Lives'" class="ml-2 text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full">{{ translate('channelList.live') }}</span>
+                 class="text-sm text-gray-400 mb-2 pl-2 sticky top-0 bg-black/95 py-2 z-10 backdrop-blur flex items-center">
+              {{ category }}
             </div>
             
             <div class="space-y-2">
@@ -74,7 +65,7 @@
                 :key="channel.id"
                 @click="selectChannel(channel)"
                 class="w-full text-left p-3 rounded-xl bg-gray-800/50 hover:bg-primary/10 flex items-center gap-3 group transition-all"
-                :class="{'bg-primary/20': currentChannel?.id === channel.id, 'border border-red-500/30': channel.type?.includes('youtube-live')}"
+                :class="{'bg-primary/20': currentChannel?.id === channel.id}"
               >
                 <div class="w-10 h-10 rounded-lg overflow-hidden bg-black/30 flex-shrink-0 relative">
                   <img 
@@ -83,9 +74,6 @@
                     class="w-full h-full object-contain p-1"
                     loading="lazy"
                   >
-                  <div v-if="channel.type?.includes('youtube-live')" class="absolute -bottom-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                    <i class="bi bi-broadcast text-white text-xs"></i>
-                  </div>
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -135,10 +123,6 @@
   <AddChannel v-if="showAddChannel" 
              @close="showAddChannel = false"
              @channel-added="handleChannelAdded" />
-
-  <!-- YouTube Lives Modal -->
-  <YouTubeLives v-if="showYoutubeLives" 
-                @close="handleYoutubeLivesClose" />
 </template>
 
 <script>
@@ -147,13 +131,11 @@ import { useChannelStore } from '../stores/channelStore';
 import { useLanguageStore } from '../stores/languageStore';
 import { storeToRefs } from 'pinia';
 import AddChannel from './AddChannel.vue';
-import YouTubeLives from './YouTubeLives.vue';
 import axios from 'axios';
 
 export default {
   components: {
-    AddChannel,
-    YouTubeLives
+    AddChannel
   },
   
   emits: ['close'],
@@ -165,7 +147,6 @@ export default {
     const searchQuery = ref('');
     const selectedCategory = ref('');
     const showAddChannel = ref(false);
-    const showYoutubeLives = ref(false);
     const channels = ref([]);
     const loading = ref(true);
     const error = ref(null);
@@ -250,14 +231,6 @@ export default {
       // Get all category names
       const allCategories = Object.keys(filteredChannels.value).sort();
       
-      // Prioritize 'Lives' category if it exists
-      if (allCategories.includes('Lives')) {
-        // Remove 'Lives' from its current position
-        const withoutLives = allCategories.filter(cat => cat !== 'Lives');
-        // Add 'Lives' to the beginning
-        return ['Lives', ...withoutLives];
-      }
-      
       return allCategories;
     });
 
@@ -267,12 +240,6 @@ export default {
 
     const handleChannelAdded = () => {
       // Refresh the channel list when a new channel is added
-      fetchChannels();
-    };
-
-    const handleYoutubeLivesClose = () => {
-      showYoutubeLives.value = false;
-      // Refresh the channel list to include any newly added YouTube Live channels
       fetchChannels();
     };
 
@@ -365,13 +332,11 @@ export default {
       currentChannel,
       selectChannel,
       showAddChannel,
-      showYoutubeLives,
-      handleChannelAdded,
       channels,
       loading,
       error,
       store,
-      handleYoutubeLivesClose,
+      handleChannelAdded,
       resetChannels,
       isResetting,
       selectCategory,
