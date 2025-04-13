@@ -31,7 +31,8 @@
     "english": "Английский",
     "turkish": "Турецкий",
     "russian": "Русский",
-    "arabic": "Арабский"
+    "arabic": "Арабский",
+    "tagalog": "Тагальский"
   },
   "errors": {
     "streamNotAvailable": "Поток недоступен. Пожалуйста, попробуйте позже.",
@@ -43,11 +44,84 @@
     "title": "Список каналов",
     "liveStreams": "Прямые трансляции",
     "searchPlaceholder": "Поиск каналов...",
-    "allChannels": "Все каналы"
+    "allChannels": "Все каналы",
+    "lives": "Трансляции",
+    "live": "ПРЯМОЙ ЭФИР",
+    "channel": "Канал",
+    "userStreams": "Пользовательские трансляции",
+    "liveStream": "Прямая трансляция"
   },
   "youtubeLives": {
+    "title": "YouTube прямые эфиры",
+    "searchPlaceholder": "Поиск прямых трансляций...",
+    "searching": "Поиск прямых трансляций...",
+    "noChannels": "Прямые трансляции не найдены",
     "live": "ПРЯМОЙ ЭФИР",
     "viewers": "зрителей",
-    "addChannelTitle": "Добавить канал YouTube"
+    "addChannelTitle": "Добавить {name} в каналы",
+    "enterQuery": "Пожалуйста, введите поисковый запрос"
+  },
+  "youtubeToHLS": {
+    "title": "Конвертер YouTube в HLS",
+    "channelName": "Название канала YouTube",
+    "enterChannelName": "Введите название канала...",
+    "videosFound": "видео найдено",
+    "videoCount": "Количество видео для конвертации",
+    "creating": "Создание...",
+    "createChannel": "Создать HLS канал",
+    "channelCreated": "Канал создан!",
+    "channelAdded": "YouTube канал добавлен в ваш телевизор",
+    "channelDetails": "Детали канала",
+    "name": "Название",
+    "channelNumber": "Номер канала",
+    "videosToProcess": "Видео для обработки",
+    "status": "Статус",
+    "processing": "Обработка...",
+    "processingMessage": "Ваши видео обрабатываются в фоновом режиме. Вы можете начать просмотр, когда видео будут готовы.",
+    "switchChannel": "Переключитесь на канал {number} для просмотра контента.",
+    "enterChannelNameError": "Пожалуйста, введите название канала"
+  },
+  "common": {
+    "close": "Закрыть",
+    "cancel": "Отмена",
+    "search": "Поиск",
+    "searching": "Поиск..."
+  },
+  "profile": {
+    "title": "Профиль пользователя",
+    "retry": "Повторить",
+    "accountInfo": "Информация об аккаунте",
+    "username": "Имя пользователя",
+    "role": "Роль",
+    "status": "Статус",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "channelLists": "Мои списки каналов",
+    "watchParties": "Мои просмотры",
+    "logout": "Выйти",
+    "notLoggedIn": "Вы не вошли в систему",
+    "fetchFailed": "Не удалось загрузить профиль",
+    "fetchError": "Ошибка загрузки профиля",
+    "login": "Войти",
+    "signup": "Зарегистрироваться"
+  },
+  "auth": {
+    "loginTitle": "Вход",
+    "signupTitle": "Регистрация",
+    "emailOrUsername": "Email или имя пользователя",
+    "email": "Email",
+    "password": "Пароль",
+    "confirmPassword": "Подтвердите пароль",
+    "username": "Имя пользователя",
+    "displayName": "Отображаемое имя",
+    "login": "Войти",
+    "signup": "Зарегистрироваться",
+    "noAccount": "Нет аккаунта?",
+    "haveAccount": "Уже есть аккаунт?",
+    "signupPrompt": "Зарегистрироваться сейчас",
+    "loginPrompt": "Войти вместо этого",
+    "usernameRequirements": "Только буквы, цифры и подчеркивания",
+    "clickToUpload": "Нажмите, чтобы загрузить фото профиля",
+    "passwordMatch": "Пароли не совпадают"
   }
 } 
