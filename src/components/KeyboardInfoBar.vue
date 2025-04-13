@@ -53,37 +53,31 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 
 export default {
   name: 'KeyboardInfoBar',
-  setup() {
-    const isVisible = ref(true);
-    const hasClosed = ref(false);
-
+  props: {
+    visible: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['update:visible'],
+  setup(props, { emit }) {
+    const isVisible = ref(props.visible);
+    
     const hideInfoBar = () => {
-      isVisible.value = false;
-      hasClosed.value = true;
-      // Save to localStorage to remember user's preference
-      localStorage.setItem('keyboardInfoBarClosed', 'true');
+      emit('update:visible', false);
     };
 
-    const showInfoBar = () => {
-      isVisible.value = true;
-    };
-
-    onMounted(() => {
-      // Check if user has previously closed the info bar
-      const isClosed = localStorage.getItem('keyboardInfoBarClosed') === 'true';
-      if (isClosed) {
-        isVisible.value = false;
-      }
+    watch(() => props.visible, (newValue) => {
+      isVisible.value = newValue;
     });
 
     return {
       isVisible,
-      hideInfoBar,
-      showInfoBar
+      hideInfoBar
     };
   }
 }

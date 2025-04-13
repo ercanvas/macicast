@@ -1,7 +1,10 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-900 to-black">
+    <!-- Info Toggle Button -->
+    <InfoToggleButton :active="showKeyboardInfo" @toggle="toggleKeyboardInfo" />
+    
     <!-- Keyboard Shortcuts Info Bar (Desktop Only) -->
-    <KeyboardInfoBar />
+    <KeyboardInfoBar v-model:visible="showKeyboardInfo" />
     
     <!-- Mobil Dikey Uyarısı -->
     <div v-if="isMobilePortrait" 
@@ -99,9 +102,8 @@
         </div>
       </Transition>
 
-      <!-- Mobile Circle Menu - Only visible on mobile -->
+      <!-- Mobile Circle Menu - Now visible on all screen sizes -->
       <MobileCircleMenu 
-        v-if="isMobile" 
         :tvScreenRef="tvScreen"
         @open-channel-list="showChannelList = true"
         @open-remote-control="showRemote = true"
@@ -195,6 +197,7 @@ import UserProfile from './components/UserProfile.vue'
 import Auth from './components/Auth.vue'
 import MobileCircleMenu from './components/MobileCircleMenu.vue'
 import KeyboardInfoBar from './components/KeyboardInfoBar.vue'
+import InfoToggleButton from './components/InfoToggleButton.vue'
 
 export default {
   name: 'App',
@@ -211,7 +214,8 @@ export default {
     UserProfile,
     Auth,
     MobileCircleMenu,
-    KeyboardInfoBar
+    KeyboardInfoBar,
+    InfoToggleButton
   },
   setup() {
     // Reference to TVScreen component
@@ -232,6 +236,7 @@ export default {
     const showLanguageSelector = ref(false)
     const showUserProfile = ref(false)
     const showAuth = ref(false)
+    const showKeyboardInfo = ref(false)
     let channelInfoTimeout = null
 
     // Add a ref to track if an input element has focus
@@ -327,8 +332,6 @@ export default {
 
     // Update handleKeyPress to check inputHasFocus
     const handleKeyPress = (e) => {
-      if (isMobile.value) return; // Disable keyboard shortcuts on mobile
-      
       // Skip if an input element has focus or if the event target is an input
       if (
         inputHasFocus.value ||
@@ -474,6 +477,10 @@ export default {
       console.log('Fullscreen toggled from App.vue');
     };
 
+    const toggleKeyboardInfo = () => {
+      showKeyboardInfo.value = !showKeyboardInfo.value;
+    };
+
     // Set YouTube API key
     window.YOUTUBE_API_KEY = 'AIzaSyDLNU8j5aqwaSEg1llzJfrd6QpwoyihbBo';
 
@@ -509,7 +516,9 @@ export default {
       $t,
       tvScreen,
       closeAllComponents,
-      handleFullscreenToggle
+      handleFullscreenToggle,
+      showKeyboardInfo,
+      toggleKeyboardInfo
     }
   }
 }
