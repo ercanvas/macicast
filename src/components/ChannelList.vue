@@ -10,12 +10,23 @@
             <h2 class="text-lg font-bold">{{ translate('channelList.title') }}</h2>
           </div>
           <div class="flex items-center gap-2">
-            <button @click="purgeAllChannels" 
-                   class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
-                   title="Delete all channels">
+            <!-- Delete button that toggles delete mode -->
+            <button @click="toggleDeleteMode" 
+                   class="flex items-center gap-1 px-2 py-1 rounded-lg"
+                   :class="deleteMode ? 'bg-gray-500/20 text-gray-400' : 'bg-red-500/20 hover:bg-red-500/30 text-red-500'"
+                   title="Delete channels">
               <i class="bi bi-trash"></i>
-              <span class="hidden sm:inline">Tüm Kanalları Sil</span>
             </button>
+            
+            <!-- Delete selected channels button - only shown in delete mode -->
+            <button v-if="deleteMode && selectedChannels.length > 0" 
+                   @click="deleteSelectedChannels"
+                   class="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-500 transition-all"
+                   title="Delete selected channels">
+              <i class="bi bi-trash"></i>
+              <span class="hidden sm:inline">{{ selectedChannels.length }} Kanalı Sil</span>
+            </button>
+            
             <button @click="showAddChannel = true" 
                     class="w-8 h-8 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center">
               <i class="bi bi-plus-lg"></i>
@@ -60,13 +71,22 @@
             </div>
             
             <div class="space-y-2">
-              <button
+              <div
                 v-for="channel in filteredChannels[category]"
                 :key="channel.id"
-                @click="selectChannel(channel)"
                 class="w-full text-left p-3 rounded-xl bg-gray-800/50 hover:bg-primary/10 flex items-center gap-3 group transition-all"
-                :class="{'bg-primary/20': currentChannel?.id === channel.id}"
+                :class="{'bg-primary/20': currentChannel?.id === channel.id && !deleteMode}"
               >
+                <!-- Checkbox for selection in delete mode -->
+                <div v-if="deleteMode" class="flex-shrink-0 mr-1">
+                  <input 
+                    type="checkbox" 
+                    :checked="isChannelSelected(channel)"
+                    @click.stop="toggleChannelSelection(channel)"
+                    class="w-4 h-4 accent-primary cursor-pointer"
+                  />
+                </div>
+                
                 <div class="w-10 h-10 rounded-lg overflow-hidden bg-black/30 flex-shrink-0 relative">
                   <img 
                     :src="channel.logo_url" 
@@ -76,15 +96,18 @@
                   >
                 </div>
 
-                <div class="flex-1 min-w-0">
+                <div 
+                  class="flex-1 min-w-0"
+                  @click="deleteMode ? toggleChannelSelection(channel) : selectChannel(channel)"
+                >
                   <div class="font-medium truncate">{{ channel.name }}</div>
                   <div class="text-xs text-gray-400">{{ translate('channelList.channel') }} {{ channel.channel_number }}</div>
                 </div>
 
-                <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+                <div v-if="!deleteMode" class="opacity-0 group-hover:opacity-100 transition-opacity" @click="selectChannel(channel)">
                   <i class="bi bi-play-fill text-primary"></i>
                 </div>
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -93,26 +116,38 @@
         <div v-if="store.hasUserStreams" class="mt-4">
           <h3 class="text-lg font-bold mb-2">{{ translate('channelList.userStreams') }}</h3>
           <div class="space-y-2">
-            <button
+            <div
               v-for="stream in store.userStreams" 
               :key="stream.id"
-              @click="selectChannel(stream)"
               class="w-full text-left p-3 rounded-xl bg-gray-800/50 hover:bg-primary/10 flex items-center gap-3 group transition-all"
-              :class="{'bg-primary/20': currentChannel?.id === stream.id}"
+              :class="{'bg-primary/20': currentChannel?.id === stream.id && !deleteMode}"
             >
+              <!-- Checkbox for selection in delete mode -->
+              <div v-if="deleteMode" class="flex-shrink-0 mr-1">
+                <input 
+                  type="checkbox" 
+                  :checked="isChannelSelected(stream)"
+                  @click.stop="toggleChannelSelection(stream)"
+                  class="w-4 h-4 accent-primary cursor-pointer"
+                />
+              </div>
+              
               <div class="w-10 h-10 rounded-lg overflow-hidden bg-black/30 flex-shrink-0 flex items-center justify-center">
                 <i class="bi bi-broadcast text-2xl"></i>
               </div>
 
-              <div class="flex-1 min-w-0">
+              <div 
+                class="flex-1 min-w-0"
+                @click="deleteMode ? toggleChannelSelection(stream) : selectChannel(stream)"
+              >
                 <div class="font-medium truncate">{{ stream.name }}</div>
                 <div class="text-xs text-primary">{{ translate('channelList.liveStream') }}</div>
               </div>
 
-              <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+              <div v-if="!deleteMode" class="opacity-0 group-hover:opacity-100 transition-opacity" @click="selectChannel(stream)">
                 <i class="bi bi-play-fill text-primary"></i>
               </div>
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,6 +186,10 @@ export default {
     const loading = ref(true);
     const error = ref(null);
     const isResetting = ref(false);
+    
+    // New variables for deletion functionality
+    const deleteMode = ref(false);
+    const selectedChannels = ref([]);
 
     const fetchChannels = async () => {
       try {
@@ -235,7 +274,9 @@ export default {
     });
 
     const selectChannel = (channel) => {
-      store.setCurrentChannel(channel);
+      if (!deleteMode.value) {
+        store.setCurrentChannel(channel);
+      }
     };
 
     const handleChannelAdded = () => {
@@ -283,6 +324,81 @@ export default {
       return languageStore.t(key);
     };
 
+    // Toggle delete mode on/off
+    const toggleDeleteMode = () => {
+      deleteMode.value = !deleteMode.value;
+      if (!deleteMode.value) {
+        // Clear selections when exiting delete mode
+        selectedChannels.value = [];
+      }
+    };
+    
+    // Check if a channel is selected
+    const isChannelSelected = (channel) => {
+      return selectedChannels.value.some(ch => ch.id === channel.id);
+    };
+    
+    // Toggle selection of a channel
+    const toggleChannelSelection = (channel) => {
+      if (isChannelSelected(channel)) {
+        selectedChannels.value = selectedChannels.value.filter(ch => ch.id !== channel.id);
+      } else {
+        selectedChannels.value.push(channel);
+      }
+    };
+    
+    // Delete selected channels
+    const deleteSelectedChannels = async () => {
+      try {
+        if (selectedChannels.value.length === 0) return;
+        
+        isResetting.value = true;
+        error.value = null;
+        
+        if (!confirm(`Bu işlem seçili ${selectedChannels.value.length} kanalı kalıcı olarak silecektir. Devam etmek istiyor musunuz?`)) {
+          isResetting.value = false;
+          return;
+        }
+        
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
+        
+        // Delete channels one by one
+        for (const channel of selectedChannels.value) {
+          try {
+            await axios.delete(`${apiBaseUrl}/channels/${channel.id}`);
+            
+            // Remove from local list
+            channels.value = channels.value.filter(ch => ch.id !== channel.id);
+            
+            // If this channel was currently selected, reset current channel
+            if (currentChannel.value && currentChannel.value.id === channel.id) {
+              store.setCurrentChannel(null);
+            }
+          } catch (err) {
+            console.error(`Error deleting channel ${channel.id}:`, err);
+          }
+        }
+        
+        // Update store with remaining channels
+        store.setChannels(channels.value);
+        
+        // Reset selection list
+        selectedChannels.value = [];
+        
+        // Exit delete mode
+        deleteMode.value = false;
+        
+        alert('Seçili kanallar başarıyla silindi!');
+      } catch (err) {
+        console.error('Error deleting channels:', err);
+        error.value = `Kanallar silinirken bir hata oluştu: ${err.message || 'Bilinmeyen hata'}`;
+        alert(`Kanallar silinirken bir hata oluştu: ${err.message || 'Bilinmeyen hata'}`);
+      } finally {
+        isResetting.value = false;
+      }
+    };
+    
+    // Legacy function for purging all channels - kept for backward compatibility
     const purgeAllChannels = async () => {
       try {
         isResetting.value = true;
@@ -341,7 +457,14 @@ export default {
       isResetting,
       selectCategory,
       translate,
-      purgeAllChannels
+      purgeAllChannels,
+      // New properties for delete functionality
+      deleteMode,
+      selectedChannels,
+      toggleDeleteMode,
+      isChannelSelected,
+      toggleChannelSelection,
+      deleteSelectedChannels
     };
   }
 };
