@@ -381,51 +381,64 @@ export default {
         return;
       }
       
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        changeChannel('up');
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        changeChannel('down');
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        changeVolume('up');
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        changeVolume('down');
-      } else if (e.key.toLowerCase() === 'c') {
-        showChannelList.value = !showChannelList.value;
-        showRemote.value = false;
-      } else if (e.key.toLowerCase() === 'r') {
-        showRemote.value = !showRemote.value;
-        showChannelList.value = false;
-      } else if (e.key.toLowerCase() === 's') {
-        toggleStreamManager();
-      } else if (e.key.toLowerCase() === 'y') {
-        showYouTubeConverter.value = true;
-      } else if (e.key.toLowerCase() === 'l') {
-        showYoutubeLives.value = true;
-      } else if (e.key.toLowerCase() === 'e') {
-        showLanguageSelector.value = !showLanguageSelector.value;
-      } else if (e.key.toLowerCase() === 'p') {
-        // Toggle user profile
-        showUserProfile.value = !showUserProfile.value;
-        // Hide other panels when profile is shown
-        showChannelList.value = false;
-        showRemote.value = false;
-      } else if (e.key.toLowerCase() === 'a') {
-        // Toggle auth panel
-        showAuth.value = !showAuth.value;
-        // Hide other panels when auth is shown
-        showChannelList.value = false;
-        showRemote.value = false;
-        showUserProfile.value = false;
-      } else if (e.key.toLowerCase() === 'm') {
-        // Toggle M3U Import panel
-        showM3UImport.value = !showM3UImport.value;
-        // Hide other panels when M3U Import is shown
-        showChannelList.value = false;
-        showRemote.value = false;
+      try {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          changeChannel('up');
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          changeChannel('down');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          changeVolume('up');
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          changeVolume('down');
+        } else if (e.key.toLowerCase() === 'c') {
+          e.preventDefault();
+          // Use safer toggle method with error checking
+          try {
+            // Direct toggle without relying on other components
+            showChannelList.value = !showChannelList.value;
+            // Always hide remote when toggling channel list
+            if (showRemote.value) showRemote.value = false;
+            console.log('Channel list toggled:', showChannelList.value);
+          } catch (err) {
+            console.error('Error toggling channel list:', err);
+          }
+        } else if (e.key.toLowerCase() === 'r') {
+          showRemote.value = !showRemote.value;
+          showChannelList.value = false;
+        } else if (e.key.toLowerCase() === 's') {
+          toggleStreamManager();
+        } else if (e.key.toLowerCase() === 'y') {
+          showYouTubeConverter.value = true;
+        } else if (e.key.toLowerCase() === 'l') {
+          showYoutubeLives.value = true;
+        } else if (e.key.toLowerCase() === 'e') {
+          showLanguageSelector.value = !showLanguageSelector.value;
+        } else if (e.key.toLowerCase() === 'p') {
+          // Toggle user profile
+          showUserProfile.value = !showUserProfile.value;
+          // Hide other panels when profile is shown
+          showChannelList.value = false;
+          showRemote.value = false;
+        } else if (e.key.toLowerCase() === 'a') {
+          // Toggle auth panel
+          showAuth.value = !showAuth.value;
+          // Hide other panels when auth is shown
+          showChannelList.value = false;
+          showRemote.value = false;
+          showUserProfile.value = false;
+        } else if (e.key.toLowerCase() === 'm') {
+          // Toggle M3U Import panel
+          showM3UImport.value = !showM3UImport.value;
+          // Hide other panels when M3U Import is shown
+          showChannelList.value = false;
+          showRemote.value = false;
+        }
+      } catch (error) {
+        console.error('Error handling keyboard shortcut:', error);
       }
     };
 

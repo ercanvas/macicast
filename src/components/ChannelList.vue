@@ -176,9 +176,30 @@ export default {
   emits: ['close'],
   
   setup() {
-    const store = useChannelStore();
-    const languageStore = useLanguageStore();
-    const { currentChannel } = storeToRefs(store);
+    let store;
+    let languageStore;
+    
+    try {
+      store = useChannelStore();
+    } catch (err) {
+      console.error('Error initializing channel store:', err);
+      store = {
+        channels: [],
+        setCurrentChannel: () => {},
+        setChannels: () => {},
+        hasUserStreams: false,
+        userStreams: []
+      };
+    }
+    
+    try {
+      languageStore = useLanguageStore();
+    } catch (err) {
+      console.error('Error initializing language store:', err);
+      languageStore = null;
+    }
+    
+    const { currentChannel } = store ? storeToRefs(store) : { currentChannel: ref(null) };
     const searchQuery = ref('');
     const selectedCategory = ref('');
     const showAddChannel = ref(false);
