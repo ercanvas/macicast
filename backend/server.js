@@ -113,7 +113,7 @@ const app = express();
 const corsOptions = {
   origin: '*', // Allow all origins during development - change this for production!
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'x-auth-token'],
   credentials: true,
   maxAge: 86400 // Cache preflight requests for 24 hours
 };
@@ -126,7 +126,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, x-auth-token');
   res.header('Access-Control-Allow-Credentials', 'true');
   
   // Handle preflight requests

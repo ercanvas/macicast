@@ -321,7 +321,30 @@ export default {
     };
 
     const translate = (key) => {
-      return languageStore.t(key);
+      try {
+        // Check if languageStore exists and has the t function
+        if (languageStore && typeof languageStore.t === 'function') {
+          return languageStore.t(key);
+        } else {
+          // Fallback for when languageStore.t is not available
+          console.warn(`Translation function not available for key: ${key}`);
+          
+          // Return a simple fallback based on the key
+          if (key === 'channelList.title') return 'Channels';
+          if (key === 'channelList.searchPlaceholder') return 'Search channels...';
+          if (key === 'channelList.allChannels') return 'All Channels';
+          if (key === 'channelList.channel') return 'Channel';
+          if (key === 'channelList.userStreams') return 'User Streams';
+          if (key === 'channelList.liveStream') return 'Live Stream';
+          
+          // Extract the last part of the key as a fallback
+          const parts = key.split('.');
+          return parts[parts.length - 1].replace(/([A-Z])/g, ' $1').trim();
+        }
+      } catch (error) {
+        console.error(`Error in translate function for key: ${key}`, error);
+        return key;
+      }
     };
 
     // Toggle delete mode on/off
