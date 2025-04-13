@@ -362,20 +362,39 @@ export default {
         
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://macicast-backend.onrender.com/api';
         
+        // Track successful and failed deletions
+        const deleteResults = {
+          success: [],
+          failed: []
+        };
+        
         // Delete channels one by one
         for (const channel of selectedChannels.value) {
           try {
-            await axios.delete(`${apiBaseUrl}/channels/${channel.id}`);
+            // Check if channel has a valid ID
+            const channelId = channel.id || channel._id;
+            
+            if (!channelId) {
+              console.error(`Cannot delete channel: Missing ID`, channel);
+              deleteResults.failed.push(channel.name || 'Unknown channel');
+              continue;
+            }
+            
+            // Try to delete the channel
+            await axios.delete(`${apiBaseUrl}/channels/${channelId}`);
             
             // Remove from local list
-            channels.value = channels.value.filter(ch => ch.id !== channel.id);
+            channels.value = channels.value.filter(ch => (ch.id !== channelId && ch._id !== channelId));
             
             // If this channel was currently selected, reset current channel
-            if (currentChannel.value && currentChannel.value.id === channel.id) {
+            if (currentChannel.value && (currentChannel.value.id === channelId || currentChannel.value._id === channelId)) {
               store.setCurrentChannel(null);
             }
+            
+            deleteResults.success.push(channel.name || channelId);
           } catch (err) {
-            console.error(`Error deleting channel ${channel.id}:`, err);
+            console.error(`Error deleting channel ${channel.id || channel._id || 'unknown'}:`, err);
+            deleteResults.failed.push(channel.name || 'Unknown channel');
           }
         }
         
@@ -388,7 +407,13 @@ export default {
         // Exit delete mode
         deleteMode.value = false;
         
-        alert('Seçili kanallar başarıyla silindi!');
+        // Show results to user
+        if (deleteResults.failed.length === 0) {
+          alert('Seçili kanallar başarıyla silindi!');
+        } else {
+          const message = `${deleteResults.success.length} kanal başarıyla silindi.\n${deleteResults.failed.length} kanal silinirken hata oluştu.`;
+          alert(message);
+        }
       } catch (err) {
         console.error('Error deleting channels:', err);
         error.value = `Kanallar silinirken bir hata oluştu: ${err.message || 'Bilinmeyen hata'}`;
