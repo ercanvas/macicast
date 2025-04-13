@@ -368,10 +368,49 @@ export default {
           failed: []
         };
         
-        // Delete channels one by one
-        for (const channel of selectedChannels.value) {
+        // Separate channels into database channels and custom channels
+        const dbChannels = [];
+        const customChannels = [];
+        
+        // Identify database vs custom channels based on ID format
+        selectedChannels.value.forEach(channel => {
+          const channelId = channel.id || channel._id;
+          // If ID starts with "custom-" or doesn't match MongoDB ObjectId format (24 hex chars)
+          if (channelId && (
+              channelId.toString().startsWith('custom-') || 
+              !/^[0-9a-fA-F]{24}$/.test(channelId.toString())
+            )) {
+            customChannels.push(channel);
+          } else {
+            dbChannels.push(channel);
+          }
+        });
+        
+        console.log(`Processing ${dbChannels.length} database channels and ${customChannels.length} custom channels`);
+        
+        // Handle custom channels (remove from local state only)
+        for (const channel of customChannels) {
           try {
-            // Check if channel has a valid ID
+            const channelId = channel.id || channel._id;
+            
+            // Remove from local list only (no API call)
+            channels.value = channels.value.filter(ch => (ch.id !== channelId && ch._id !== channelId));
+            
+            // If this channel was currently selected, reset current channel
+            if (currentChannel.value && (currentChannel.value.id === channelId || currentChannel.value._id === channelId)) {
+              store.setCurrentChannel(null);
+            }
+            
+            deleteResults.success.push(channel.name || channelId);
+          } catch (err) {
+            console.error(`Error removing custom channel ${channel.id || channel._id || 'unknown'}:`, err);
+            deleteResults.failed.push(channel.name || 'Unknown channel');
+          }
+        }
+        
+        // Handle database channels (call API)
+        for (const channel of dbChannels) {
+          try {
             const channelId = channel.id || channel._id;
             
             if (!channelId) {
@@ -380,7 +419,7 @@ export default {
               continue;
             }
             
-            // Try to delete the channel
+            // Only try to delete from DB if it's not a custom channel
             await axios.delete(`${apiBaseUrl}/channels/${channelId}`);
             
             // Remove from local list
