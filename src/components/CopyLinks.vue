@@ -67,18 +67,27 @@
         </form>
       </div>
     </div>
+
+    <!-- Copied Info Bar -->
+    <CopiedInfoBar :show="showCopiedInfo" />
   </div>
 </template>
 
 <script>
+import CopiedInfoBar from './CopiedInfoBar.vue';
+
 export default {
+  components: {
+    CopiedInfoBar
+  },
   data() {
     return {
       links: {
-        'Philippines': 'http://185.99.253.31:9981/playlist/channels.m3u',
-        'Turkey': 'http://185.99.253.31:9981/playlist/channels.m3u'
+        'Philippines': 'https://iptv-org.github.io/iptv/countries/ph.m3u',
+        'Turkey': 'https://iptv-org.github.io/iptv/countries/tr.m3u'
       },
       showAddModal: false,
+      showCopiedInfo: false,
       newLink: {
         name: '',
         url: ''
@@ -88,6 +97,10 @@ export default {
   methods: {
     copyLink(link) {
       navigator.clipboard.writeText(link)
+      this.showCopiedInfo = true
+      setTimeout(() => {
+        this.showCopiedInfo = false
+      }, 1000)
     },
     addNewLink() {
       if (this.newLink.name && this.newLink.url) {
