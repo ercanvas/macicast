@@ -12,6 +12,24 @@
 
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="space-y-4">
+        <!-- Copied Links Selection -->
+        <div v-if="Object.keys(copiedLinks).length > 0">
+          <label class="block text-sm font-medium mb-1">Kopyalanan Listeler</label>
+          <div class="space-y-2 mb-4 max-h-32 overflow-y-auto pr-2">
+            <div 
+              v-for="(url, name) in copiedLinks" 
+              :key="name"
+              @click="selectCopiedLink(name, url)"
+              class="flex items-center space-x-2 p-2 rounded-lg cursor-pointer hover:bg-gray-800/50"
+              :class="{'bg-primary/20': m3uUrl === url}"
+            >
+              <i class="bi bi-link-45deg text-primary"></i>
+              <span class="text-sm">{{ name }}</span>
+            </div>
+          </div>
+          <div class="border-b border-gray-700 mb-4"></div>
+        </div>
+
         <!-- M3U URL -->
         <div>
           <label class="block text-sm font-medium mb-1">M3U Liste URL</label>
@@ -123,6 +141,13 @@ import axios from 'axios';
 
 export default {
   emits: ['close', 'channels-added'],
+  
+  props: {
+    copiedLinks: {
+      type: Object,
+      default: () => ({})
+    }
+  },
   
   setup(props, { emit }) {
     const store = useChannelStore();
@@ -294,6 +319,19 @@ export default {
         loading.value = false;
       }
     };
+
+    // Add method to set M3U URL programmatically
+    const setM3UUrl = (url) => {
+      m3uUrl.value = url;
+      // Trigger the search immediately
+      handleSubmit();
+    };
+
+    // Function to select a copied link
+    const selectCopiedLink = (name, url) => {
+      m3uUrl.value = url;
+      handleSubmit();
+    };
     
     return {
       m3uUrl,
@@ -306,8 +344,10 @@ export default {
       selectedCount,
       handleSubmit,
       toggleAllChannels,
-      addSelectedChannels
+      addSelectedChannels,
+      setM3UUrl,
+      selectCopiedLink // Expose the new method
     };
   }
 };
-</script> 
+</script>
