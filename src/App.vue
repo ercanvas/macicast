@@ -187,6 +187,9 @@
           />
         </div>
       </div>
+
+      <!-- Copy Links Component -->
+      <CopyLinks />
     </div>
   </div>
 </template>
@@ -210,6 +213,7 @@ import MobileCircleMenu from './components/MobileCircleMenu.vue'
 import KeyboardInfoBar from './components/KeyboardInfoBar.vue'
 import InfoToggleButton from './components/InfoToggleButton.vue'
 import M3UToChannelList from './components/M3UToChannelList.vue'
+import CopyLinks from './components/CopyLinks.vue'
 
 export default {
   name: 'App',
@@ -228,7 +232,8 @@ export default {
     MobileCircleMenu,
     KeyboardInfoBar,
     InfoToggleButton,
-    M3UToChannelList
+    M3UToChannelList,
+    CopyLinks
   },
   setup() {
     // Reference to TVScreen component
@@ -251,6 +256,7 @@ export default {
     const showAuth = ref(false)
     const showKeyboardInfo = ref(false)
     const showM3UImport = ref(false)
+    const showCopyLinks = ref(false)
     let channelInfoTimeout = null
 
     // Add a ref to track if an input element has focus
@@ -513,6 +519,7 @@ export default {
       showUserProfile.value = false;
       showAuth.value = false;
       showM3UImport.value = false;
+      showCopyLinks.value = false;
     };
 
     const handleFullscreenToggle = () => {
@@ -567,7 +574,8 @@ export default {
       showKeyboardInfo,
       toggleKeyboardInfo,
       showM3UImport,
-      handleChannelsAdded
+      handleChannelsAdded,
+      showCopyLinks
     }
   }
 }
